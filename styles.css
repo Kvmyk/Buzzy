@@ -132,13 +132,15 @@ body {
 }
 
 .instructions {
-    padding-left: 20px;
+    padding-left: 30px; /* Zwiększone z 20px na 30px */
     margin-bottom: 20px;
+    list-style-position: outside; /* Zapewnia, że numerki będą na zewnątrz elementów listy */
 }
 
 .instructions li {
     margin-bottom: 10px;
     line-height: 1.7;
+    padding-left: 10px; /* Dodane, aby tekst miał odstęp od numerka */
 }
 
 .app-features {
