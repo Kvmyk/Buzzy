@@ -62,7 +62,7 @@ class RecorderApp {
             this.recording = true;
             this.recordButton.textContent = 'ZATRZYMAJ';
             this.recordButton.classList.add('recording');
-            this.statusLabel.textContent = 'Nagrywanie...';
+            this.updateRecordingStatus('recording');
             
             // Set up blinking animation
             this.recordingIcon.textContent = '🔴';
@@ -209,7 +209,7 @@ Czas: ${minutes}:${seconds}, Rozmiar: ${fileSize.toFixed(1)} KB`;
             });
             
             if (response.ok) {
-                this.statusLabel.textContent = 'Plik wysłany pomyślnie!';
+                this.updateRecordingStatus('success');
             } else {
                 const errorText = await response.text();
                 throw new Error(`${response.status} - ${errorText}`);
@@ -218,6 +218,27 @@ Czas: ${minutes}:${seconds}, Rozmiar: ${fileSize.toFixed(1)} KB`;
         } catch (error) {
             console.error('Błąd podczas wysyłania pliku:', error);
             this.statusLabel.textContent = `Błąd: ${error.message}`;
+            this.updateRecordingStatus('ready');
+        }
+    }
+    
+    updateRecordingStatus(status) {
+        this.recordingIcon.classList.remove('recording-icon-ready', 'recording-icon-active', 'recording-icon-success');
+        
+        switch(status) {
+            case 'ready':
+                this.recordingIcon.classList.add('recording-icon-ready');
+                this.statusLabel.textContent = 'Gotowy do nagrywania';
+                break;
+            case 'recording':
+                this.recordingIcon.classList.add('recording-icon-active');
+                this.statusLabel.textContent = 'Nagrywanie w toku...';
+                break;
+            case 'success':
+                this.recordingIcon.classList.add('recording-icon-success');
+                this.statusLabel.textContent = 'Nagranie wysłane pomyślnie';
+                setTimeout(() => this.updateRecordingStatus('ready'), 3000);
+                break;
         }
     }
 }

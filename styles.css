@@ -337,6 +337,32 @@ body {
     100% { opacity: 1; }
 }
 
+/* Stany ikony nagrywania */
+.recording-icon-ready {
+    color: var(--primary-color) !important;
+    animation: glow 2s infinite alternate;
+}
+
+.recording-icon-active {
+    color: #FF3300 !important;
+    animation: glow-red 2s infinite alternate;
+}
+
+.recording-icon-success {
+    color: #00CC66 !important;
+    animation: glow-green 2s infinite alternate;
+}
+
+@keyframes glow-red {
+    from { text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #FF3300, 0 0 20px #FF3300; }
+    to { text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #FF3300, 0 0 40px #FF3300; }
+}
+
+@keyframes glow-green {
+    from { text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #00CC66, 0 0 20px #00CC66; }
+    to { text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #00CC66, 0 0 40px #00CC66; }
+}
+
 .pulse-icon {
     animation: pulse-animation 2s infinite;
 }
