@@ -1,110 +1,332 @@
-body {
-    background-color: #000000;
-    color: #FFCC00;
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    justify-content: center;
+/* Zmienne CSS dla łatwej konfiguracji */
+:root {
+    --primary-color: #FFCC00;
+    --primary-dark: #D9A700;
+    --secondary-color: #000000;
+    --accent-color: #FF3300;
+    --text-color: #FFFFFF;
+    --card-bg: rgba(10, 10, 10, 0.9);
+    --card-border: rgba(255, 204, 0, 0.3);
+    --transition-speed: 0.3s;
 }
 
+/* Podstawowe style i reset */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    transition: all var(--transition-speed) ease;
+}
+
+body {
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    font-family: 'Segoe UI', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    line-height: 1.6;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Visualizer canvas - pełny ekran w tle */
+.audio-visualizer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+}
+
+#visualizer-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* Kontener główny */
 .main-container {
     max-width: 600px;
     width: 100%;
-    padding: 20px;
+    padding: 30px 20px;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 20px;
+    z-index: 1;
+}
+
+/* Karty z efektem szkła */
+.card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--card-border);
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.card:hover {
+    box-shadow: 0 8px 32px rgba(255, 204, 0, 0.2);
+}
+
+.main-card {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+/* Nagłówek aplikacji */
+.app-header {
+    text-align: center;
+    margin-bottom: 10px;
 }
 
 .header {
-    text-align: center;
-    font-size: 24px;
-    font-weight: bold;
-    margin: 10px 0;
-    color: #FFD700;
+    font-size: 28px;
+    font-weight: 800;
+    margin: 10px 0 5px;
+    color: var(--primary-color);
+    letter-spacing: 1px;
+    text-shadow: 0 2px 10px rgba(255, 204, 0, 0.5);
 }
 
+.tagline {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.7);
+    font-style: italic;
+}
+
+/* Box informacyjny */
+.info-card {
+    margin-bottom: 10px;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    font-size: 18px;
+    color: var(--primary-color);
+    cursor: pointer;
+}
+
+.card-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s ease;
+}
+
+.card-content.show {
+    max-height: 500px;
+    margin-top: 15px;
+}
+
+.instructions {
+    padding-left: 20px;
+    margin-bottom: 15px;
+}
+
+.instructions li {
+    margin-bottom: 8px;
+}
+
+.app-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.feature {
+    background-color: rgba(255, 204, 0, 0.1);
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.feature i {
+    color: var(--primary-color);
+}
+
+/* Status box */
 .status-box {
     display: flex;
     align-items: center;
+    gap: 15px;
 }
 
 #recording-icon {
     font-size: 32px;
-    color: #FFCC00;
-    margin-right: 10px;
+    color: var(--primary-color);
 }
 
 #status-label {
     font-size: 18px;
 }
 
+/* Timer */
 .timer-container {
     text-align: center;
 }
 
 #timer-label {
-    font-size: 40px;
+    font-size: 48px;
     font-weight: bold;
-    color: #FFD700;
+    color: var(--primary-color);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
 }
 
+/* Poziom dźwięku */
 .level-box {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 8px;
 }
 
 .level-label {
-    font-size: 14px;
-    color: #FFD700;
+    font-size: 16px;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .progress-container {
     width: 100%;
-    height: 20px;
-    background-color: #222222;
-    border-radius: 10px;
+    height: 24px;
+    background-color: rgba(34, 34, 34, 0.7);
+    border-radius: 12px;
     overflow: hidden;
-    border: 1px solid #FFD700;
+    border: 1px solid rgba(255, 204, 0, 0.3);
+    position: relative;
 }
 
 .progress-bar {
     width: 0%;
     height: 100%;
-    background-color: #FFCC00;
-    transition: width 0.3s ease;
+    background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+    transition: width 0.1s ease;
+    position: relative;
 }
 
+.progress-bar::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0),
+        rgba(255, 255, 255, 0.2),
+        rgba(255, 255, 255, 0)
+    );
+    animation: shimmer 2s infinite;
+}
+
+.level-markers {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 5%;
+}
+
+.level-markers span {
+    width: 1px;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Przycisk nagrywania */
 #record-button {
-    background-color: #FFCC00;
-    color: #000000;
+    background-color: var(--primary-color);
+    color: var(--secondary-color);
     border: none;
-    padding: 15px;
+    padding: 18px;
     font-size: 22px;
     font-weight: bold;
     cursor: pointer;
-    border-radius: 5px;
-    transition: background-color 0.3s;
+    border-radius: 50px;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    outline: none;
+    position: relative;
 }
 
 #record-button:hover {
-    background-color: #FFD700;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(255, 204, 0, 0.3);
+}
+
+#record-button:active {
+    transform: translateY(1px);
+}
+
+#record-button i {
+    font-size: 20px;
+    margin-right: 5px;
+}
+
+/* Efekt 3D dla przycisku */
+.btn-3d {
+    box-shadow: 0 6px 0 var(--primary-dark), 0 8px 10px rgba(0,0,0,0.3);
+}
+
+.btn-3d:active {
+    box-shadow: 0 2px 0 var(--primary-dark), 0 3px 6px rgba(0,0,0,0.3);
+}
+
+/* Stan nagrywania */
+.recording #record-button {
+    background-color: var(--accent-color);
+    color: var(--text-color);
+    box-shadow: 0 6px 0 rgba(204, 51, 0, 1), 0 8px 10px rgba(0,0,0,0.3);
+}
+
+.recording #record-button:active {
+    box-shadow: 0 2px 0 rgba(204, 51, 0, 1), 0 3px 6px rgba(0,0,0,0.3);
+}
+
+.recording #record-button i:before {
+    content: "\f28b"; /* zmień ikonę podczas nagrywania */
 }
 
 #last-recording-info {
     font-size: 14px;
-    color: #FFD700;
-    margin-top: 10px;
+    color: rgba(255, 255, 255, 0.7);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 15px;
+    line-height: 1.6;
 }
 
-.recording #record-button {
-    background-color: #222222;
-    color: #FFCC00;
-    border: 2px solid #FFCC00;
+.made-with {
+    text-align: center;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 20px;
 }
 
+/* Animacje */
 .blink {
     animation: blink-animation 1s infinite;
 }
@@ -113,4 +335,78 @@ body {
     0% { opacity: 1; }
     50% { opacity: 0.3; }
     100% { opacity: 1; }
+}
+
+.pulse-icon {
+    animation: pulse-animation 2s infinite;
+}
+
+@keyframes pulse-animation {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.pulse-slow {
+    animation: pulse-slow 3s ease-in-out infinite;
+}
+
+@keyframes pulse-slow {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+}
+
+.scale-animation {
+    animation: scale-in 0.5s ease-out;
+    transform-origin: center;
+}
+
+@keyframes scale-in {
+    0% { transform: scale(0.95); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.glow-effect {
+    animation: glow 2s infinite alternate;
+}
+
+@keyframes glow {
+    from { text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px var(--primary-color), 0 0 20px var(--primary-color); }
+    to { text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px var(--primary-color), 0 0 40px var(--primary-color); }
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Responsywność */
+@media (max-width: 480px) {
+    .main-container {
+        padding: 15px 10px;
+    }
+    
+    .header {
+        font-size: 24px;
+    }
+    
+    #timer-label {
+        font-size: 40px;
+    }
+    
+    #record-button {
+        padding: 15px;
+        font-size: 18px;
+    }
+}
+
+/* Animacja dla przycisków podczas naciśnięcia */
+button {
+    transform-style: preserve-3d;
+    transition: transform 0.2s;
+}
+
+button:active {
+    transform: scale(0.98);
 }

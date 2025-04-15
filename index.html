@@ -1,40 +1,84 @@
+index.html -->
 <!DOCTYPE html>
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rejestrator Dźwięku</title>
+    <title>Buzzy</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#FFCC00">
     <link rel="icon" href="icons/icon-192x192.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
+    <!-- Animowane tło -->
+    <div class="audio-visualizer">
+        <canvas id="visualizer-canvas"></canvas>
+    </div>
+
     <div class="main-container">
-        <h1 class="header">REJESTRATOR DŹWIĘKU</h1>
-        
-        <div class="status-box">
-            <span id="recording-icon">⚪</span>
-            <span id="status-label">Gotowy do nagrywania</span>
+        <div class="app-header">
+            <h1 class="header"><i class="fas fa-microphone-alt pulse-icon"></i> REJESTRATOR DŹWIĘKU</h1>
+            <div class="tagline">Twórz, nagrywaj, udostępniaj</div>
         </div>
         
-        <div class="timer-container">
-            <span id="timer-label">00:00</span>
-        </div>
-        
-        <div class="level-box">
-            <span class="level-label">Poziom dźwięku:</span>
-            <div class="progress-container">
-                <div id="level-bar" class="progress-bar"></div>
+        <div class="card info-card">
+            <div class="card-header" id="info-toggle">
+                <i class="fas fa-info-circle"></i> Jak korzystać z aplikacji
+                <i class="fas fa-chevron-down toggle-icon"></i>
+            </div>
+            <div class="card-content" id="info-content">
+                <ol class="instructions">
+                    <li><strong>Naciśnij</strong> duży przycisk "NAGRYWAJ", aby rozpocząć nagrywanie</li>
+                    <li><strong>Mów</strong> do mikrofonu - poziom dźwięku zobaczysz na wskaźniku</li>
+                    <li><strong>Zatrzymaj</strong> nagrywanie tym samym przyciskiem</li>
+                    <li>Aplikacja <strong>automatycznie zapisze</strong> i <strong>wyśle</strong> nagranie</li>
+                </ol>
+                <div class="app-features">
+                    <div class="feature"><i class="fas fa-wifi"></i> Działa offline</div>
+                    <div class="feature"><i class="fas fa-cloud-upload-alt"></i> Automatyczny upload</div>
+                    <div class="feature"><i class="fas fa-mobile-alt"></i> Dostosowana do urządzeń mobilnych</div>
+                </div>
             </div>
         </div>
+
+        <div class="card main-card">
+            <div class="status-box">
+                <span id="recording-icon" class="glow-effect">⚪</span>
+                <span id="status-label">Gotowy do nagrywania</span>
+            </div>
+            
+            <div class="timer-container">
+                <span id="timer-label" class="scale-animation">00:00</span>
+            </div>
+            
+            <div class="level-box">
+                <div class="level-label">
+                    <span>Poziom dźwięku:</span>
+                    <i class="fas fa-volume-up pulse-slow"></i>
+                </div>
+                <div class="progress-container">
+                    <div id="level-bar" class="progress-bar"></div>
+                    <div class="level-markers">
+                        <span></span><span></span><span></span>
+                        <span></span><span></span>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="record-button" class="btn-3d"><i class="fas fa-microphone"></i> NAGRYWAJ</button>
+            
+            <div id="last-recording-info" class="recording-history"></div>
+        </div>
         
-        <button id="record-button">NAGRYWAJ</button>
-        
-        <div id="last-recording-info"></div>
+        <div class="made-with">
+            <span>Made with <i class="fas fa-heart pulse-icon"></i> and JavaScript</span>
+        </div>
     </div>
     
     <script src="app.js"></script>
+    <script src="visualizer.js"></script>
     <script>
         // Register service worker
         if ('serviceWorker' in navigator) {
@@ -46,6 +90,15 @@
                     console.log('Błąd rejestracji Service Workera:', error);
                 });
         }
+        
+        // Toggle info card
+        document.getElementById('info-toggle').addEventListener('click', function() {
+            const content = document.getElementById('info-content');
+            const icon = this.querySelector('.toggle-icon');
+            content.classList.toggle('show');
+            icon.classList.toggle('fa-chevron-up');
+            icon.classList.toggle('fa-chevron-down');
+        });
     </script>
 </body>
 </html>
