@@ -17,7 +17,7 @@ app.use(cors({
 }));
 
 // Serwowanie statycznych plików (frontend)
-app.use(express.static('public'));
+app.use(express.static(__dirname));
 
 // Konfiguracja Spotify
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
