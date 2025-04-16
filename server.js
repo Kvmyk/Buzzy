@@ -96,7 +96,7 @@ app.get('/callback', (req, res) => {
     },
     headers: {
       'content-type': 'application/x-www-form-urlencoded',
-      'Authorization': 'Basic ' + (Buffer.from(client_id + ':' + client_secret).toString('base64')),
+      'Authorization': 'Basic ' + (new Buffer.from(client_id + ':' + client_secret).toString('base64')),
     },
     json: true,
   };
