@@ -7,7 +7,7 @@ const ipAddress = '2a01:4f9:2b:289c::130';
 
 const client_id = process.env.SPOTIFY_CLIENT_ID; // Pobierz z .env
 const client_secret = process.env.SPOTIFY_CLIENT_SECRET; // Pobierz z .env
-const redirect_uri = 'https://n8nlink.bieda.it:10130/rest/oauth2-credential/callback'; // Zarejestrowany redirect URI
+const redirect_uri = 'https://n8nlink.bieda.it/rest/oauth2-credential/callback'; // Stały redirect URI
 
 // Endpoint do logowania użytkownika do Spotify
 app.get('/', (req, res) => {
@@ -35,7 +35,7 @@ app.get('/callback', async (req, res) => {
       grant_type: 'authorization_code',
       code: code,
       redirect_uri: redirect_uri, // Ten sam redirect URI
-    }),
+    }).toString(),
   };
 
   try {
