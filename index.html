@@ -75,6 +75,9 @@
         <!-- Umieść to w miejscu, gdzie chcesz wyświetlić status logowania Spotify -->
         <div id="spotify-status-container"></div>
         
+        <!-- Dodaj ten kod do index.html w odpowiednim miejscu interfejsu -->
+        <button id="login-button" class="login-button">Zaloguj się przez Spotify</button>
+
         <div class="made-with">
             <span>Made with <i class="fas fa-heart pulse-icon"></i> and JavaScript</span>
         </div>
@@ -125,6 +128,27 @@
                     // Jeśli nie ma tokena, przekieruj do logowania
                     window.location.href = '/login';
                 }
+            }
+        });
+
+        document.getElementById('login-button').addEventListener('click', function() {
+            window.location.href = '/login';
+        });
+
+        // Kod do obsługi tokenu, jeśli istnieje w URL
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            
+            if (token) {
+                // Zapisz token w localStorage
+                localStorage.setItem('spotify_token', token);
+                
+                // Opcjonalnie: Wyczyść token z URL dla bezpieczeństwa
+                window.history.replaceState({}, document.title, window.location.pathname);
+                
+                // Ukryj przycisk logowania, jeśli użytkownik jest zalogowany
+                document.getElementById('login-button').style.display = 'none';
             }
         });
     </script>
