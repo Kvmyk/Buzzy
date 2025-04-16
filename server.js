@@ -11,10 +11,9 @@ const redirect_uri = 'https://n8nlink.bieda.it/rest/oauth2-credential/callback';
 
 // Endpoint do logowania użytkownika do Spotify
 app.get('/', (req, res) => {
-  const state = 'some_random_string'; // Możesz użyć generatora losowych ciągów
-  const scopes = encodeURIComponent('user-read-private user-read-email');
-  const authUrl = `https://accounts.spotify.com/authorize?response_type=code&client_id=${client_id}&scope=${scopes}&redirect_uri=${encodeURIComponent(redirect_uri)}&state=${state}`;
-  res.redirect(authUrl);
+  const scopes = encodeURIComponent('user-read-private user-read-email'); // Zakresy dostępu
+  const authUrl = `https://accounts.spotify.com/authorize?response_type=code&client_id=${client_id}&scope=${scopes}&redirect_uri=${encodeURIComponent(redirect_uri)}`;
+  res.redirect(authUrl); // Przekierowanie użytkownika do Spotify
 });
 
 // Endpoint obsługujący callback
@@ -40,7 +39,7 @@ app.get('/callback', async (req, res) => {
     data: new URLSearchParams({
       grant_type: 'authorization_code',
       code: code,
-      redirect_uri: redirect_uri,
+      redirect_uri: redirect_uri, // Ten sam redirect URI
     }).toString(),
   };
 
@@ -49,9 +48,11 @@ app.get('/callback', async (req, res) => {
     const access_token = response.data.access_token;
     const refresh_token = response.data.refresh_token;
 
+    // Zaloguj tokeny w konsoli (lub przechowaj je w sesji, jeśli potrzebujesz)
     console.log('Access Token:', access_token);
     console.log('Refresh Token:', refresh_token);
 
+    // Przekierowanie użytkownika do strony głównej po zalogowaniu
     res.send('Zalogowano pomyślnie! Możesz teraz korzystać z aplikacji.');
   } catch (error) {
     console.error('Błąd podczas wymiany kodu na token:', error.response?.data || error.message);
