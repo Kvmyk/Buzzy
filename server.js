@@ -11,8 +11,7 @@ const ipAddress = '2a01:4f9:2b:289c::130';
 // Use the new environment variable names
 const client_id = process.env.SPOTIFY_CLIENT_ID;
 const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
-const redirect_uri = 'http://buzzy.bieda.it/callback';
-
+const redirect_uri = 'https://n8nlink.bieda.it/rest/oauth2-credential/callback';
 // Serve static files
 app.use(express.static('./'));
 
