@@ -137,24 +137,16 @@ app.get('/callback', function(req, res) {
           expires_in: expires_in
         });
 
-        // Przekierowanie na główną domenę z tokenami
-        res.redirect('https://buzzy.bieda.it/?' + 
-          querystring.stringify({
-            token: access_token,
-            refresh_token: refresh_token,
-            expires_in: expires_in
-          }));
+        // Przekierowanie na główną domenę BEZ tokenów
+        res.redirect('https://buzzy.bieda.it/');
       } else {
         // Szczegółowe logowanie błędu (tylko w konsoli)
         console.error('Spotify authentication error:', error);
         console.error('Response status:', response ? response.statusCode : 'No response');
         console.error('Response body:', body);
         
-        // Przekierowanie z informacją o błędzie
-        res.redirect('https://buzzy.bieda.it/?' + 
-          querystring.stringify({
-            error: 'invalid_token'
-          }));
+        // Przekierowanie bez informacji o błędzie
+        res.redirect('https://buzzy.bieda.it/');
       }
     });
   }
