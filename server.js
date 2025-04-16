@@ -27,16 +27,10 @@ function generateRandomString(length) {
 // Serve static files
 app.use(express.static('./'));
 
-// Root route: Redirect users to Spotify login or serve the main page
+// Root route: Serve the main page without automatic redirection
 app.get('/', (req, res) => {
-  // Jeśli jest token w URL, pokaż stronę główną
-  if (req.query.token) {
-    // Serwowanie strony głównej z tokenem
-    res.sendFile(__dirname + '/index.html');
-  } else {
-    // Jeśli nie ma tokena, przekieruj do logowania
-    res.redirect('/login');
-  }
+  // Po prostu serwuj stronę główną bez automatycznego przekierowania
+  res.sendFile(__dirname + '/index.html');
 });
 
 // Step 1: Login route to redirect to Spotify
