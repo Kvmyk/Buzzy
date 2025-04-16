@@ -22,13 +22,20 @@ app.get('/', (req, res) => {
 
 // Step 1: Login route to redirect to Spotify
 app.get('/login', (req, res) => {
-  const scope = 'user-read-private user-read-email'; // Adjust scopes as needed
+  // Zapisz adres, na który chcemy wrócić po zakończeniu uwierzytelniania
+  const returnUrl = 'http://buzzy.bieda.it';
+  
+  // Dodaj state parameter, który będzie zawierał encoded returnUrl
+  const state = Buffer.from(returnUrl).toString('base64');
+  
+  const scope = 'user-read-private user-read-email playlist-modify-private playlist-modify-public';
   const authUrl = 'https://accounts.spotify.com/authorize?' +
     querystring.stringify({
       response_type: 'code',
       client_id: client_id,
       scope: scope,
       redirect_uri: redirect_uri,
+      state: state // Dodajemy parametr state
     });
   res.redirect(authUrl);
 });

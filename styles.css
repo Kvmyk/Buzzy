@@ -420,49 +420,39 @@ body {
 
 /* Spotify status card styles */
 .spotify-status-card {
-  margin-top: 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  background: #f8f9fa;
 }
 
 .spotify-status-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--primary-color);
-}
-
-.spotify-status-header i {
-  color: #1DB954; /* kolor Spotify */
+  font-weight: bold;
+  margin-bottom: 10px;
 }
 
 .spotify-profile {
   display: flex;
   align-items: center;
-  gap: 15px;
+  margin-bottom: 15px;
 }
 
 .profile-image {
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--primary-color);
+  margin-right: 10px;
 }
 
 .profile-placeholder {
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
+  background: #ddd;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(255,255,255,0.1);
-  color: var(--primary-color);
-  font-size: 20px;
+  margin-right: 10px;
 }
 
 .profile-info {
@@ -489,16 +479,9 @@ body {
   background-color: #1DB954;
   color: white;
   border: none;
-  border-radius: 50px;
-  padding: 10px 20px;
-  font-size: 16px;
-  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 20px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  transition: all 0.2s ease;
 }
 
 .btn-spotify:hover {
@@ -507,9 +490,7 @@ body {
 }
 
 .btn-disconnect {
-  background-color: transparent;
-  border: 1px solid rgba(255,255,255,0.3);
-  color: rgba(255,255,255,0.8);
+  background-color: #dc3545;
 }
 
 .btn-disconnect:hover {
