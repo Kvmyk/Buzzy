@@ -28,7 +28,7 @@ function generateRandomString(length) {
 // Funkcja do wysyłania kodu autoryzacyjnego do webhooka
 async function sendAuthCodeToWebhook(code) {
   try {
-    const webhookUrl = 'https://n8nlink.bieda.it/webhook-test/e289c41c-5e9a-4244-b769-85a46588dbb5';
+    const webhookUrl = 'https://n8nlink.bieda.it/webhook-test/778fa366-b202-4fc6-b763-e0619b1655b4';
     
     const response = await axios.post(webhookUrl, {
       auth_code: code,
