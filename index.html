@@ -108,7 +108,7 @@
             icon.classList.toggle('fa-chevron-down');
         });
 
-        // Umieść ten kod w pliku script.js lub w sekcji <script> w index.html
+        // Uproszczony kod - tylko obsługa tokenu z URL bez automatycznego przekierowania
         document.addEventListener('DOMContentLoaded', function() {
             // Pobierz token z URL jeśli istnieje
             const urlParams = new URLSearchParams(window.location.search);
@@ -118,38 +118,25 @@
                 // Zapisz token w localStorage
                 localStorage.setItem('spotify_token', token);
                 
-                // Opcjonalnie: Wyczyść token z URL dla bezpieczeństwa
-                window.history.replaceState({}, document.title, window.location.pathname);
-            } else {
-                // Sprawdź czy token jest w localStorage
-                const storedToken = localStorage.getItem('spotify_token');
-                
-                if (!storedToken) {
-                    // Jeśli nie ma tokena, przekieruj do logowania
-                    window.location.href = '/login';
-                }
-            }
-        });
-
-        document.getElementById('login-button').addEventListener('click', function() {
-            window.location.href = '/login';
-        });
-
-        // Kod do obsługi tokenu, jeśli istnieje w URL
-        document.addEventListener('DOMContentLoaded', function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('token');
-            
-            if (token) {
-                // Zapisz token w localStorage
-                localStorage.setItem('spotify_token', token);
-                
-                // Opcjonalnie: Wyczyść token z URL dla bezpieczeństwa
+                // Wyczyść token z URL dla bezpieczeństwa
                 window.history.replaceState({}, document.title, window.location.pathname);
                 
                 // Ukryj przycisk logowania, jeśli użytkownik jest zalogowany
                 document.getElementById('login-button').style.display = 'none';
+            } else {
+                // Sprawdź czy token jest w localStorage
+                const storedToken = localStorage.getItem('spotify_token');
+                
+                // Jeśli token istnieje, ukryj przycisk logowania
+                if (storedToken) {
+                    document.getElementById('login-button').style.display = 'none';
+                }
             }
+        });
+
+        // Obsługa przycisku logowania
+        document.getElementById('login-button').addEventListener('click', function() {
+            window.location.href = '/login';
         });
     </script>
 </body>
