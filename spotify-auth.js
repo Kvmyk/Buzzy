@@ -69,12 +69,12 @@ class SpotifyAuth {
   }
   
   login() {
-    // Zapisz aktualny URL jako returnUrl (base64 encoded)
+    // Zapisz aktualny URL jako returnUrl
     const returnUrl = window.location.href;
-    const state = btoa(returnUrl);
     
-    // Przekieruj do endpointu logowania
-    window.location.href = `http://buzzy.bieda.it/login`;
+    // Używamy tej samej metody kodowania co w Node.js
+    // Zamiast btoa() używamy prostego kodowania URI
+    window.location.href = `/login?state=${encodeURIComponent(returnUrl)}`;
   }
   
   getAccessToken() {

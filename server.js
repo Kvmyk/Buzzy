@@ -23,7 +23,7 @@ app.get('/', (req, res) => {
 // Step 1: Login route to redirect to Spotify
 app.get('/login', (req, res) => {
   // Pobierz state z parametru URL (jeśli istnieje)
-  const state = req.query.state || Buffer.from('http://buzzy.bieda.it').toString('base64');
+  const state = req.query.state || encodeURIComponent('http://buzzy.bieda.it');
   
   // Zakres uprawnień
   const scope = 'user-read-private user-read-email playlist-modify-private playlist-modify-public';
@@ -35,7 +35,7 @@ app.get('/login', (req, res) => {
       client_id: client_id,
       scope: scope,
       redirect_uri: redirect_uri,
-      state: state  // Dodajemy parametr state
+      state: state  // Przekazujemy oryginalny state
     });
     
   res.redirect(authUrl);
