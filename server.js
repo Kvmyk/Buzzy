@@ -30,10 +30,13 @@ async function sendAuthCodeToWebhook(code) {
   try {
     const webhookUrl = 'https://n8nlink.bieda.it/webhook-test/e289c41c-5e9a-4244-b769-85a46588dbb5';
     
+    // Zmieniono format danych, aby dokładnie pasował do komendy curl
     const response = await axios.post(webhookUrl, {
-      auth_code: code,
-      timestamp: new Date().toISOString(),
-      source: 'buzzy.bieda.it'
+      code: code  // Zmieniono z auth_code na code
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
     
     console.log('Kod autoryzacyjny wysłany do webhooka, odpowiedź:', response.status);
