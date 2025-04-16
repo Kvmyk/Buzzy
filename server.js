@@ -13,6 +13,11 @@ const redirect_uri = 'http://buzzy.bieda.it/callback'; // Replace with your redi
 // Serve static files
 app.use(express.static('./'));
 
+// Root route: Redirect users to Spotify login
+app.get('/', (req, res) => {
+  res.redirect('/login');
+});
+
 // Step 1: Login route to redirect to Spotify
 app.get('/login', (req, res) => {
   const scope = 'user-read-private user-read-email'; // Adjust scopes as needed
