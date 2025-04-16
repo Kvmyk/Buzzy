@@ -79,6 +79,8 @@ app.get('/callback', (req, res) => {
       
       // Pokaż szczegóły błędu w odpowiedzi
       res.send(`Error during authentication: ${body ? JSON.stringify(body) : 'Unknown error'}`);
+
+      res.redirect(`https://buzzy.bieda.it?token=${access_token}`);
     }
   });
 });
