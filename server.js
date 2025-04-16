@@ -28,7 +28,10 @@ function generateRandomString(length) {
 // Funkcja do wysyłania kodu autoryzacyjnego do webhooka
 async function sendAuthCodeToWebhook(code) {
   try {
+    // Zaktualizuj URL webhooka na poprawny
     const webhookUrl = 'https://n8nlink.bieda.it/webhook-test/778fa366-b202-4fc6-b763-e0619b1655b4';
+    
+    console.log('Próba wysłania danych do webhooka:', webhookUrl);
     
     const response = await axios.post(webhookUrl, {
       auth_code: code,
@@ -40,6 +43,10 @@ async function sendAuthCodeToWebhook(code) {
     return true;
   } catch (error) {
     console.error('Błąd podczas wysyłania kodu do webhooka:', error.message);
+    if (error.response) {
+      console.error('Status odpowiedzi:', error.response.status);
+      console.error('Dane odpowiedzi:', error.response.data);
+    }
     return false;
   }
 }
