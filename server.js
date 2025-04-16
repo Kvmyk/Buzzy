@@ -47,40 +47,43 @@ async function sendAuthCodeToWebhook(code) {
   }
 }
 
-// Funkcja do wysyłania danych do webhooka
-async function sendAuthDataToWebhook(authData) {
+// Function to exchange auth code for tokens and send results to webhook
+async function getSpotifyTokenAndSendToWebhook(code) {
   try {
+    // Prepare token exchange with Spotify
+    const tokenResponse = await axios.post('https://accounts.spotify.com/api/token', 
+      querystring.stringify({
+        code: code,
+        redirect_uri: redirect_uri,
+        grant_type: 'authorization_code'
+      }), 
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': 'Basic ' + Buffer.from(client_id + ':' + client_secret).toString('base64')
+        }
+      }
+    );
+    
+    console.log('Token successfully retrieved from Spotify');
+    
+    // Forward the complete token response to webhook
     const webhookUrl = 'https://n8nlink.bieda.it/webhook-test/e289c41c-5e9a-4244-b769-85a46588dbb5';
-    
-    console.log('Próba wysłania danych do webhooka:', JSON.stringify({
-      access_token: authData.access_token ? '[TOKEN UKRYTY]' : 'brak',
-      refresh_token: authData.refresh_token ? '[TOKEN UKRYTY]' : 'brak',
-      expires_in: authData.expires_in || 'brak',
-      code: authData.code ? '[KOD UKRYTY]' : 'brak'
-    }));
-    
-    // Wysyłaj wszystkie dostępne dane uwierzytelniające
-    const response = await axios.post(webhookUrl, authData, {
+    const webhookResponse = await axios.post(webhookUrl, tokenResponse.data, {
       headers: {
         'Content-Type': 'application/json'
       }
     });
     
-    console.log('Dane uwierzytelniające wysłane do webhooka:');
-    console.log('- Status odpowiedzi:', response.status);
-    console.log('- Nagłówki odpowiedzi:', response.headers);
-    console.log('- Ciało odpowiedzi:', response.data);
-    return true;
+    console.log('Complete token data forwarded to webhook, response:', webhookResponse.status);
+    return tokenResponse.data;
   } catch (error) {
-    console.error('Błąd podczas wysyłania danych do webhooka:');
-    console.error('- Komunikat błędu:', error.message);
+    console.error('Error during token exchange or webhook forwarding:', error.message);
     if (error.response) {
-      console.error('- Status odpowiedzi:', error.response.status);
-      console.error('- Nagłówki odpowiedzi:', error.response.headers);
-      console.error('- Dane błędu:', error.response.data);
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', error.response.data);
     }
-    console.error('- Stack trace:', error.stack);
-    return false;
+    return null;
   }
 }
 
@@ -109,82 +112,25 @@ app.get('/login', (req, res) => {
 });
 
 // Step 2: Callback route to handle Spotify's response
-app.get('/callback', function(req, res) {
+app.get('/callback', async (req, res) => {
   const code = req.query.code || null;
-  const state = req.query.state || null;
+  console.log('Received authorization code:', code);
   
-  console.log('=== OTRZYMANO CALLBACK OD SPOTIFY ===');
-  console.log('- Kod autoryzacyjny otrzymany:', code ? 'Tak' : 'Nie');
-  console.log('- State otrzymany:', state ? 'Tak' : 'Nie');
-
-  if (state === null) {
-    console.error('Błąd: Brak parametru state, możliwa próba CSRF');
-    res.redirect('/#' + 
-      querystring.stringify({
-        error: 'state_mismatch'
-      }));
-  } else {
-    console.log('Przygotowywanie żądania wymiany kodu na token...');
-    const authOptions = {
-      url: 'https://accounts.spotify.com/api/token',
-      form: {
-        code: code,
-        redirect_uri: redirect_uri,
-        grant_type: 'authorization_code'
-      },
-      headers: {
-        'content-type': 'application/x-www-form-urlencoded',
-        'Authorization': 'Basic ' + (Buffer.from(client_id + ':' + client_secret).toString('base64'))
-      },
-      json: true
-    };
-
-    console.log('Wysyłanie żądania do Spotify API: POST', authOptions.url);
-    console.log('- redirect_uri:', redirect_uri);
-    console.log('- grant_type:', authOptions.form.grant_type);
-
-    // Make the request to exchange code for access token
-    request.post(authOptions, function(error, response, body) {
-      console.log('Otrzymano odpowiedź od Spotify API');
-      
-      if (!error && response && response.statusCode === 200) {
-        const access_token = body.access_token;
-        const refresh_token = body.refresh_token;
-        const expires_in = body.expires_in;
-        
-        console.log('=== WYMIANA KODU NA TOKEN UDANA ===');
-        console.log('- Access token otrzymany:', access_token ? 'Tak' : 'Nie');
-        console.log('- Refresh token otrzymany:', refresh_token ? 'Tak' : 'Nie');
-        console.log('- Expires in:', expires_in);
-
-        // Wyślij wszystkie dane uwierzytelniające do webhooka
-        console.log('Wysyłanie danych do webhooka...');
-        sendAuthDataToWebhook({
-          code: code,
-          access_token: access_token,
-          refresh_token: refresh_token,
-          expires_in: expires_in
-        }).then(success => {
-          console.log('Webhook wysłany:', success ? 'Sukces' : 'Błąd');
-          
-          console.log('Przekierowywanie do głównej strony...');
-          res.redirect('https://buzzy.bieda.it/');
-        });
-      } else {
-        // Szczegółowe logowanie błędu
-        console.error('=== BŁĄD WYMIANY KODU NA TOKEN ===');
-        console.error('- Błąd:', error);
-        console.error('- Status:', response ? response.statusCode : 'Brak odpowiedzi');
-        console.error('- Body:', body);
-        
-        if (response) {
-          console.error('- Nagłówki odpowiedzi:', response.headers);
-        }
-        
-        console.log('Przekierowywanie do głównej strony (mimo błędu)...');
-        res.redirect('https://buzzy.bieda.it/');
-      }
-    });
+  try {
+    // Get token and send to webhook
+    const tokenData = await getSpotifyTokenAndSendToWebhook(code);
+    
+    if (tokenData && tokenData.access_token) {
+      // Redirect to main domain with token
+      res.redirect(`https://buzzy.bieda.it?token=${tokenData.access_token}`);
+    } else {
+      // Redirect without token if there was an error
+      console.error('Failed to get access token');
+      res.redirect(`https://buzzy.bieda.it`);
+    }
+  } catch (error) {
+    console.error('Error in callback route:', error.message);
+    res.redirect(`https://buzzy.bieda.it`);
   }
 });
 
