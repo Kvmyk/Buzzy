@@ -3,6 +3,7 @@ const request = require('request');
 const querystring = require('querystring');
 require('dotenv').config();
 const axios = require('axios'); // Dodaj na początku
+const { error } = require('console');
 const app = express();
 
 // Use the PORT from environment variables
@@ -78,6 +79,11 @@ app.get('/login', (req, res) => {
 // Step 2: Callback route to handle Spotify's response
 app.get('/callback', (req, res) => {
   const code = req.query.code || null;
+  var state = req.query.state || null;
+
+  if (state === null) {
+    res.redirect('/#' + querystring.stringify({error: 'state_mismatch'}));
+  }else{
   // Wyświetl kod w konsoli serwera
   console.log('Otrzymany kod autoryzacyjny:', code);
   
@@ -100,6 +106,7 @@ app.get('/callback', (req, res) => {
     },
     json: true,
   };
+}
 
   request.post(authOptions, (error, response, body) => {
     if (responseSent) return; // Nie wysyłaj odpowiedzi ponownie
