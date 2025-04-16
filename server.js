@@ -24,9 +24,7 @@ app.get('/', (req, res) => {
 app.get('/login', (req, res) => {
   // Zapisz adres, na który chcemy wrócić po zakończeniu uwierzytelniania
   const returnUrl = 'http://buzzy.bieda.it';
-  
-  // Dodaj state parameter, który będzie zawierał encoded returnUrl
-  const state = Buffer.from(returnUrl).toString('base64');
+
   
   const scope = 'user-read-private user-read-email playlist-modify-private playlist-modify-public';
   const authUrl = 'https://accounts.spotify.com/authorize?' +
@@ -35,7 +33,6 @@ app.get('/login', (req, res) => {
       client_id: client_id,
       scope: scope,
       redirect_uri: redirect_uri,
-      state: state // Dodajemy parametr state
     });
   res.redirect(authUrl);
 });
