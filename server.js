@@ -1,65 +1,61 @@
 const express = require('express');
-const axios = require('axios');
-require('dotenv').config(); // Załaduj zmienne środowiskowe
+const request = require('request');
+const querystring = require('querystring');
 const app = express();
+
 const port = 3000;
 const ipAddress = '2a01:4f9:2b:289c::130';
 
-const client_id = process.env.SPOTIFY_CLIENT_ID; // Pobierz z .env
-const client_secret = process.env.SPOTIFY_CLIENT_SECRET; // Pobierz z .env
-const redirect_uri = 'https://n8nlink.bieda.it/rest/oauth2-credential/callback'; // Stały redirect URI
+const client_id = 'CLIENT_ID'; // Replace with your Spotify client ID
+const client_secret = 'CLIENT_SECRET'; // Replace with your Spotify client secret
+const redirect_uri = 'http://buzzy.bieda.it/callback'; // Replace with your redirect URI
 
-// Endpoint do logowania użytkownika do Spotify
-app.get('/', (req, res) => {
-  const scopes = encodeURIComponent('user-read-private user-read-email'); // Zakresy dostępu
-  const authUrl = `https://accounts.spotify.com/authorize?response_type=code&client_id=${client_id}&scope=${scopes}&redirect_uri=${encodeURIComponent(redirect_uri)}`;
-  res.redirect(authUrl); // Przekierowanie użytkownika do Spotify
+// Serve static files
+app.use(express.static('./'));
+
+// Step 1: Login route to redirect to Spotify
+app.get('/login', (req, res) => {
+  const scope = 'user-read-private user-read-email'; // Adjust scopes as needed
+  const authUrl = 'https://accounts.spotify.com/authorize?' +
+    querystring.stringify({
+      response_type: 'code',
+      client_id: client_id,
+      scope: scope,
+      redirect_uri: redirect_uri,
+    });
+  res.redirect(authUrl);
 });
 
-// Endpoint obsługujący callback
-app.get('/callback', async (req, res) => {
+// Step 2: Callback route to handle Spotify's response
+app.get('/callback', (req, res) => {
   const code = req.query.code || null;
-  const state = req.query.state || null;
-
-  if (!code) {
-    return res.status(400).json({ error: 'Brak kodu autoryzacyjnego' });
-  }
-
-  if (!state || state !== 'some_random_string') {
-    return res.status(400).json({ error: 'Nieprawidłowy parametr state' });
-  }
 
   const authOptions = {
-    method: 'post',
     url: 'https://accounts.spotify.com/api/token',
-    headers: {
-      'Authorization': 'Basic ' + Buffer.from(client_id + ':' + client_secret).toString('base64'),
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    data: new URLSearchParams({
-      grant_type: 'authorization_code',
+    form: {
       code: code,
-      redirect_uri: redirect_uri, // Ten sam redirect URI
-    }).toString(),
+      redirect_uri: redirect_uri,
+      grant_type: 'authorization_code',
+    },
+    headers: {
+      'Authorization': 'Basic ' + (Buffer.from(client_id + ':' + client_secret).toString('base64')),
+    },
+    json: true,
   };
 
-  try {
-    const response = await axios(authOptions);
-    const access_token = response.data.access_token;
-    const refresh_token = response.data.refresh_token;
+  request.post(authOptions, (error, response, body) => {
+    if (!error && response.statusCode === 200) {
+      const access_token = body.access_token;
 
-    // Zaloguj tokeny w konsoli (lub przechowaj je w sesji, jeśli potrzebujesz)
-    console.log('Access Token:', access_token);
-    console.log('Refresh Token:', refresh_token);
-
-    // Przekierowanie użytkownika do strony głównej po zalogowaniu
-    res.send('Zalogowano pomyślnie! Możesz teraz korzystać z aplikacji.');
-  } catch (error) {
-    console.error('Błąd podczas wymiany kodu na token:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Nie udało się wymienić kodu na token' });
-  }
+      // Step 3: Redirect back to the main page with the token
+      res.redirect(`http://buzzy.bieda.it?token=${access_token}`);
+    } else {
+      res.send('Error during authentication');
+    }
+  });
 });
 
+// Start the server
 app.listen(port, ipAddress, () => {
   console.log(`Buzzy app running at http://[${ipAddress}]:${port}`);
 });
