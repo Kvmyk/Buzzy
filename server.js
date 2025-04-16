@@ -70,16 +70,14 @@ app.get('/callback', (req, res) => {
       const access_token = body.access_token;
       
       // Przekierowanie na główną domenę z tokenem
-      res.redirect(`https://buzzy.bieda.it`);
+      res.redirect(`https://buzzy.bieda.it?token=${access_token}`);
     } else {
-      // Szczegółowe logowanie błędu
+      // Szczegółowe logowanie błędu (tylko w konsoli)
       console.error('Spotify authentication error:', error);
       console.error('Response status:', response ? response.statusCode : 'No response');
       console.error('Response body:', body);
       
-      // Pokaż szczegóły błędu w odpowiedzi
-      res.send(`Error during authentication: ${body ? JSON.stringify(body) : 'Unknown error'}`);
-
+      // Tylko przekierowanie, bez wysyłania błędu
       res.redirect(`https://buzzy.bieda.it`);
     }
   });
