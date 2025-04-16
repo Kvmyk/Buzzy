@@ -1,14 +1,15 @@
 const express = require('express');
 const request = require('request');
 const querystring = require('querystring');
+require('dotenv').config();
 const app = express();
 
 const port = 3000;
 const ipAddress = '2a01:4f9:2b:289c::130';
 
-const client_id = 'CLIENT_ID'; // Replace with your Spotify client ID
-const client_secret = 'CLIENT_SECRET'; // Replace with your Spotify client secret
-const redirect_uri = 'http://buzzy.bieda.it/callback'; // Replace with your redirect URI
+const client_id = process.env.CLIENT_ID; // Using environment variable
+const client_secret = process.env.CLIENT_SECRET; // Using environment variable
+const redirect_uri = 'http://buzzy.bieda.it/callback';
 
 // Serve static files
 app.use(express.static('./'));
