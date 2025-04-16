@@ -27,9 +27,16 @@ function generateRandomString(length) {
 // Serve static files
 app.use(express.static('./'));
 
-// Root route: Redirect users to Spotify login
+// Root route: Redirect users to Spotify login or serve the main page
 app.get('/', (req, res) => {
-  res.redirect('/login');
+  // Jeśli jest token w URL, pokaż stronę główną
+  if (req.query.token) {
+    // Serwowanie strony głównej z tokenem
+    res.sendFile(__dirname + '/index.html');
+  } else {
+    // Jeśli nie ma tokena, przekieruj do logowania
+    res.redirect('/login');
+  }
 });
 
 // Step 1: Login route to redirect to Spotify
@@ -67,9 +74,9 @@ app.get('/callback', (req, res) => {
   request.post(authOptions, (error, response, body) => {
     if (!error && response.statusCode === 200) {
       const access_token = body.access_token;
-
-      // Step 3: Redirect back to the main page with the token
-      res.redirect(`/?token=${access_token}`);
+      
+      // Przekierowanie na główną domenę z tokenem
+      res.redirect(`https://buzzy.bieda.it?token=${access_token}`);
     } else {
       // Szczegółowe logowanie błędu
       console.error('Spotify authentication error:', error);
