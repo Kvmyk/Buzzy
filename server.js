@@ -51,6 +51,8 @@ app.get('/login', (req, res) => {
 // Step 2: Callback route to handle Spotify's response
 app.get('/callback', (req, res) => {
   const code = req.query.code || null;
+  // Sprawdź czy odpowiedź została już wysłana
+  let responseSent = false;
 
   const authOptions = {
     url: 'https://accounts.spotify.com/api/token',
@@ -66,7 +68,10 @@ app.get('/callback', (req, res) => {
   };
 
   request.post(authOptions, (error, response, body) => {
-    if (!error && response.statusCode === 200) {
+    if (responseSent) return; // Nie wysyłaj odpowiedzi ponownie
+    responseSent = true;
+    
+    if (!error && response && response.statusCode === 200) {
       const access_token = body.access_token;
       
       // Przekierowanie na główną domenę z tokenem
