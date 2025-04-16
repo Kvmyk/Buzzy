@@ -2,6 +2,7 @@ const express = require('express');
 const request = require('request');
 const querystring = require('querystring');
 require('dotenv').config();
+const axios = require('axios'); // Dodaj na początku
 const app = express();
 
 // Use the PORT from environment variables
@@ -22,6 +23,25 @@ function generateRandomString(length) {
     text += possible.charAt(Math.floor(Math.random() * possible.length));
   }
   return text;
+}
+
+// Funkcja do wysyłania kodu autoryzacyjnego do webhooka
+async function sendAuthCodeToWebhook(code) {
+  try {
+    const webhookUrl = 'https://n8nlink.bieda.it/webhook-test/e289c41c-5e9a-4244-b769-85a46588dbb5';
+    
+    const response = await axios.post(webhookUrl, {
+      auth_code: code,
+      timestamp: new Date().toISOString(),
+      source: 'buzzy.bieda.it'
+    });
+    
+    console.log('Kod autoryzacyjny wysłany do webhooka, odpowiedź:', response.status);
+    return true;
+  } catch (error) {
+    console.error('Błąd podczas wysyłania kodu do webhooka:', error.message);
+    return false;
+  }
 }
 
 // Serve static files
@@ -53,6 +73,9 @@ app.get('/callback', (req, res) => {
   const code = req.query.code || null;
   // Wyświetl kod w konsoli serwera
   console.log('Otrzymany kod autoryzacyjny:', code);
+  
+  // Wyślij kod do webhooka n8n
+  sendAuthCodeToWebhook(code);
   
   // Sprawdź czy odpowiedź została już wysłana
   let responseSent = false;
