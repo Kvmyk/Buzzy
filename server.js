@@ -63,9 +63,15 @@ app.get('/callback', (req, res) => {
       const access_token = body.access_token;
 
       // Step 3: Redirect back to the main page with the token
-      res.redirect(`https://buzzy.bieda.it?token=${access_token}`);
+      res.redirect(`/?token=${access_token}`);
     } else {
-      res.send('Error during authentication');
+      // Szczegółowe logowanie błędu
+      console.error('Spotify authentication error:', error);
+      console.error('Response status:', response ? response.statusCode : 'No response');
+      console.error('Response body:', body);
+      
+      // Pokaż szczegóły błędu w odpowiedzi
+      res.send(`Error during authentication: ${body ? JSON.stringify(body) : 'Unknown error'}`);
     }
   });
 });
