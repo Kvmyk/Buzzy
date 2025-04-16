@@ -24,7 +24,7 @@ function generateRandomString(length) {
   }
   return text;
 }
-
+ 
 // Funkcja do wysyłania kodu autoryzacyjnego do webhooka
 async function sendAuthCodeToWebhook(code) {
   try {
