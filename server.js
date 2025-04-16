@@ -12,6 +12,18 @@ const ipAddress = '2a01:4f9:2b:289c::130';
 const client_id = process.env.SPOTIFY_CLIENT_ID;
 const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
 const redirect_uri = 'https://buzzy.bieda.it/callback';
+
+// Dodaj tę funkcję na początku pliku, po deklaracji zmiennych
+function generateRandomString(length) {
+  let text = '';
+  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+  for (let i = 0; i < length; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+  return text;
+}
+
 // Serve static files
 app.use(express.static('./'));
 
@@ -22,23 +34,17 @@ app.get('/', (req, res) => {
 
 // Step 1: Login route to redirect to Spotify
 app.get('/login', (req, res) => {
-  // Pobierz state z parametru URL (jeśli istnieje)
-  const state = req.query.state || encodeURIComponent('https://buzzy.bieda.it');
-  
-  // Zakres uprawnień
+  const state = generateRandomString(16);
   const scope = 'user-read-private user-read-email playlist-modify-private playlist-modify-public';
-  
-  // Dodaj parametr state do URL autoryzacji
-  const authUrl = 'https://accounts.spotify.com/authorize?' +
+
+  res.redirect('https://accounts.spotify.com/authorize?' +
     querystring.stringify({
       response_type: 'code',
       client_id: client_id,
       scope: scope,
       redirect_uri: redirect_uri,
-      state: state  // Przekazujemy oryginalny state
-    });
-    
-  res.redirect(authUrl);
+      state: state
+    }));
 });
 
 // Step 2: Callback route to handle Spotify's response
