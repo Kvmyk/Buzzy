@@ -37,9 +37,7 @@ app.get('/spotify-auth', async (req, res) => {
 
 // Endpoint do logowania użytkownika do Spotify
 app.get('/spotify-login', (req, res) => {
-  const scopes = encodeURIComponent('user-read-private user-read-email'); // Zakresy dostępu
-  const redirect_uri = encodeURIComponent('https://n8nlink.bieda.it/callback'); // Zmieniono na nowy redirect URI
-  const authUrl = `https://accounts.spotify.com/authorize?response_type=code&client_id=${client_id}&scope=${scopes}&redirect_uri=${redirect_uri}`;
+  const authUrl = 'https://accounts.spotify.com/authorize?client_id=d5a7b3f85edc436d80e3ee703756cbd0&response_type=code&redirect_uri=https%3A%2F%2Fn8nlink.bieda.it%3A10130%2Frest%2Foauth2-credential%2Fcallback&scope=user-read-email%20user-read-private';
 
   res.redirect(authUrl); // Przekierowanie użytkownika do Spotify
 });
