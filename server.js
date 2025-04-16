@@ -38,10 +38,44 @@ app.get('/spotify-auth', async (req, res) => {
 // Endpoint do logowania użytkownika do Spotify
 app.get('/spotify-login', (req, res) => {
   const scopes = encodeURIComponent('user-read-private user-read-email'); // Zakresy dostępu
-  const redirect_uri = encodeURIComponent('http://localhost:3000/callback'); // Zmień na swój redirect URI
+  const redirect_uri = encodeURIComponent('https://n8nlink.bieda.it/callback'); // Zmieniono na nowy redirect URI
   const authUrl = `https://accounts.spotify.com/authorize?response_type=code&client_id=${client_id}&scope=${scopes}&redirect_uri=${redirect_uri}`;
 
   res.redirect(authUrl); // Przekierowanie użytkownika do Spotify
+});
+
+// Endpoint obsługujący callback
+app.get('/callback', async (req, res) => {
+  const code = req.query.code || null;
+
+  if (!code) {
+    return res.status(400).json({ error: 'Brak kodu autoryzacyjnego' });
+  }
+
+  const authOptions = {
+    method: 'post',
+    url: 'https://accounts.spotify.com/api/token',
+    headers: {
+      'Authorization': 'Basic ' + Buffer.from(client_id + ':' + client_secret).toString('base64'),
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    data: new URLSearchParams({
+      grant_type: 'authorization_code',
+      code: code,
+      redirect_uri: 'https://n8nlink.bieda.it/callback', // Zmieniono na nowy redirect URI
+    }),
+  };
+
+  try {
+    const response = await axios(authOptions);
+    const access_token = response.data.access_token;
+    const refresh_token = response.data.refresh_token;
+
+    res.json({ access_token, refresh_token });
+  } catch (error) {
+    console.error('Błąd podczas wymiany kodu na token:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Nie udało się wymienić kodu na token' });
+  }
 });
 
 app.listen(port, ipAddress, () => {
