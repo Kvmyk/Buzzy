@@ -22,17 +22,13 @@ app.get('/', (req, res) => {
 
 // Step 1: Login route to redirect to Spotify
 app.get('/login', (req, res) => {
-  // Add state parameter which n8n likely expects
-  const state = req.query.state || Math.random().toString(36).substring(7);
-  
-  const scope = 'user-read-private user-read-email';
+  const scope = 'user-read-private user-read-email'; // Adjust scopes as needed
   const authUrl = 'https://accounts.spotify.com/authorize?' +
     querystring.stringify({
       response_type: 'code',
       client_id: client_id,
       scope: scope,
       redirect_uri: redirect_uri,
-      state: state  // Include state parameter
     });
   res.redirect(authUrl);
 });
