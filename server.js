@@ -1,5 +1,6 @@
 const express = require('express');
 const axios = require('axios');
+require('dotenv').config(); // Upewnij się, że zmienne środowiskowe są załadowane
 const app = express();
 const port = 3000;
 const ipAddress = '2a01:4f9:2b:289c::130';
@@ -26,9 +27,10 @@ app.get('/spotify-auth', async (req, res) => {
   try {
     const response = await axios(authOptions);
     const token = response.data.access_token;
+    console.log('Token uzyskany pomyślnie:', token); // Logowanie tokena
     res.json({ access_token: token });
   } catch (error) {
-    console.error('Błąd podczas uzyskiwania tokena Spotify:', error.message);
+    console.error('Błąd podczas uzyskiwania tokena Spotify:', error.response?.data || error.message);
     res.status(500).json({ error: 'Nie udało się uzyskać tokena Spotify' });
   }
 });
