@@ -51,6 +51,9 @@ app.get('/login', (req, res) => {
 // Step 2: Callback route to handle Spotify's response
 app.get('/callback', (req, res) => {
   const code = req.query.code || null;
+  // Wyświetl kod w konsoli serwera
+  console.log('Otrzymany kod autoryzacyjny:', code);
+  
   // Sprawdź czy odpowiedź została już wysłana
   let responseSent = false;
 
