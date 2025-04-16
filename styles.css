@@ -418,41 +418,63 @@ body {
     100% { transform: translateX(100%); }
 }
 
-/* Spotify status card styles */
+/* Updated Spotify status card styles */
 .spotify-status-card {
-  padding: 15px;
-  border-radius: 8px;
+  padding: 20px;
+  border-radius: 12px;
   margin-bottom: 20px;
-  background: #f8f9fa;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
 }
 
 .spotify-status-header {
   font-weight: bold;
-  margin-bottom: 10px;
+  margin-bottom: 5px;
+  font-size: 18px;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spotify-status-header i {
+  font-size: 20px;
 }
 
 .spotify-profile {
   display: flex;
   align-items: center;
-  margin-bottom: 15px;
+  margin: 10px 0;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px;
+  border-radius: 50px;
+  width: 100%;
+  max-width: 350px;
 }
 
 .profile-image {
-  width: 40px;
-  height: 40px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
-  margin-right: 10px;
+  margin-right: 15px;
+  border: 2px solid var(--primary-color);
 }
 
 .profile-placeholder {
-  width: 40px;
-  height: 40px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
-  background: #ddd;
+  background: #222;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 10px;
+  margin-right: 15px;
+  border: 2px solid var(--primary-color);
 }
 
 .profile-info {
@@ -463,6 +485,7 @@ body {
 .profile-name {
   font-weight: 600;
   font-size: 16px;
+  color: var(--text-color);
 }
 
 .profile-email {
@@ -471,32 +494,55 @@ body {
 }
 
 .spotify-info {
-  font-size: 14px;
+  font-size: 15px;
   color: rgba(255, 255, 255, 0.7);
+  max-width: 400px;
+  margin: 0 auto;
+  line-height: 1.5;
 }
 
 .btn-spotify {
   background-color: #1DB954;
   color: white;
   border: none;
-  padding: 8px 16px;
-  border-radius: 20px;
+  padding: 12px 24px;
+  border-radius: 50px;
   cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  margin: 10px auto;
+  transition: all 0.3s;
+  box-shadow: 0 4px 10px rgba(29, 185, 84, 0.3);
+}
+
+.btn-spotify i {
+  font-size: 18px;
 }
 
 .btn-spotify:hover {
   background-color: #1ED760;
-  transform: scale(1.02);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(29, 185, 84, 0.4);
+}
+
+.btn-spotify:active {
+  transform: translateY(1px);
 }
 
 .btn-disconnect {
-  background-color: #dc3545;
+  background-color: rgba(220, 53, 69, 0.9);
+  box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3);
 }
 
 .btn-disconnect:hover {
-  background-color: rgba(255,255,255,0.1);
+  background-color: rgb(220, 53, 69);
+  box-shadow: 0 6px 12px rgba(220, 53, 69, 0.4);
 }
 
+/* Error message */
 .error-message {
   padding: 15px;
   background-color: rgba(255, 51, 0, 0.1);
