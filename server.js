@@ -1,44 +1,18 @@
 const express = require('express');
 const axios = require('axios');
-require('dotenv').config(); // Upewnij się, że zmienne środowiskowe są załadowane
+require('dotenv').config(); // Załaduj zmienne środowiskowe
 const app = express();
 const port = 3000;
 const ipAddress = '2a01:4f9:2b:289c::130';
 
 const client_id = process.env.SPOTIFY_CLIENT_ID; // Pobierz z .env
 const client_secret = process.env.SPOTIFY_CLIENT_SECRET; // Pobierz z .env
-
-app.use(express.static('./'));
-
-// Endpoint do uzyskania tokena Spotify
-app.get('/spotify-auth', async (req, res) => {
-  const authOptions = {
-    method: 'post',
-    url: 'https://accounts.spotify.com/api/token',
-    headers: {
-      'Authorization': 'Basic ' + Buffer.from(client_id + ':' + client_secret).toString('base64'),
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    data: new URLSearchParams({
-      grant_type: 'client_credentials',
-    }),
-  };
-
-  try {
-    const response = await axios(authOptions);
-    const token = response.data.access_token;
-    console.log('Token uzyskany pomyślnie:', token); // Logowanie tokena
-    res.json({ access_token: token });
-  } catch (error) {
-    console.error('Błąd podczas uzyskiwania tokena Spotify:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Nie udało się uzyskać tokena Spotify' });
-  }
-});
+const redirect_uri = 'https://n8nlink.bieda.it:10130/rest/oauth2-credential/callback'; // Zarejestrowany redirect URI
 
 // Endpoint do logowania użytkownika do Spotify
-app.get('/spotify-login', (req, res) => {
-  const authUrl = 'https://accounts.spotify.com/authorize?client_id=d5a7b3f85edc436d80e3ee703756cbd0&response_type=code&redirect_uri=https%3A%2F%2Fn8nlink.bieda.it%3A10130%2Frest%2Foauth2-credential%2Fcallback&scope=user-read-email%20user-read-private';
-
+app.get('/', (req, res) => {
+  const scopes = encodeURIComponent('user-read-private user-read-email'); // Zakresy dostępu
+  const authUrl = `https://accounts.spotify.com/authorize?response_type=code&client_id=${client_id}&scope=${scopes}&redirect_uri=${encodeURIComponent(redirect_uri)}`;
   res.redirect(authUrl); // Przekierowanie użytkownika do Spotify
 });
 
@@ -60,7 +34,7 @@ app.get('/callback', async (req, res) => {
     data: new URLSearchParams({
       grant_type: 'authorization_code',
       code: code,
-      redirect_uri: 'https://n8nlink.bieda.it/callback', // Zmieniono na nowy redirect URI
+      redirect_uri: redirect_uri, // Ten sam redirect URI
     }),
   };
 
@@ -69,7 +43,12 @@ app.get('/callback', async (req, res) => {
     const access_token = response.data.access_token;
     const refresh_token = response.data.refresh_token;
 
-    res.json({ access_token, refresh_token });
+    // Zaloguj tokeny w konsoli (lub przechowaj je w sesji, jeśli potrzebujesz)
+    console.log('Access Token:', access_token);
+    console.log('Refresh Token:', refresh_token);
+
+    // Przekierowanie użytkownika do strony głównej po zalogowaniu
+    res.send('Zalogowano pomyślnie! Możesz teraz korzystać z aplikacji.');
   } catch (error) {
     console.error('Błąd podczas wymiany kodu na token:', error.response?.data || error.message);
     res.status(500).json({ error: 'Nie udało się wymienić kodu na token' });
