@@ -35,6 +35,15 @@ app.get('/spotify-auth', async (req, res) => {
   }
 });
 
+// Endpoint do logowania użytkownika do Spotify
+app.get('/spotify-login', (req, res) => {
+  const scopes = encodeURIComponent('user-read-private user-read-email'); // Zakresy dostępu
+  const redirect_uri = encodeURIComponent('http://localhost:3000/callback'); // Zmień na swój redirect URI
+  const authUrl = `https://accounts.spotify.com/authorize?response_type=code&client_id=${client_id}&scope=${scopes}&redirect_uri=${redirect_uri}`;
+
+  res.redirect(authUrl); // Przekierowanie użytkownika do Spotify
+});
+
 app.listen(port, ipAddress, () => {
   console.log(`Buzzy app running at http://[${ipAddress}]:${port}`);
 });
