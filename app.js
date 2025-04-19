@@ -1,14 +1,17 @@
 class RecorderApp {
     constructor() {
-        // Retrieve token from URL or localStorage
+        // Pobierz token z URL lub localStorage
         const urlParams = new URLSearchParams(window.location.search);
+        
+        // Odczytaj token i zapisz, jeśli jest w URL
         this.token = urlParams.get('token') || localStorage.getItem('spotify_token');
         if (urlParams.get('token')) {
             localStorage.setItem('spotify_token', this.token);
-            // Remove token from URL to clean up
+            // Usuń token z URL dla bezpieczeństwa
             window.history.replaceState({}, document.title, window.location.pathname);
         }
-
+        
+        // Inicjalizuj elementy UI
         this.recordButton = document.getElementById('record-button');
         this.statusLabel = document.getElementById('status-label');
         this.recordingIcon = document.getElementById('recording-icon');
@@ -16,6 +19,7 @@ class RecorderApp {
         this.levelBar = document.getElementById('level-bar');
         this.lastRecordingInfo = document.getElementById('last-recording-info');
         
+        // Inicjalizuj zmienne stanu
         this.recording = false;
         this.recordingStartTime = null;
         this.timerInterval = null;
@@ -26,22 +30,33 @@ class RecorderApp {
         this.analyser = null;
         this.dataArray = null;
         
+        // Inicjalizuj interfejs i ustaw nasłuchiwanie zdarzeń
         this.initializeUI();
         this.setupEventListeners();
     }
     
+    // Konfiguruj UI w zależności od dostępności tokena
     initializeUI() {
         if (!this.token) {
             this.recordButton.disabled = true;
-            this.statusLabel.textContent = 'Proszę najpierw autoryzować się w Spotify.';
+            this.recordButton.classList.add('disabled');
+            this.statusLabel.textContent = 'Połącz się najpierw ze Spotify';
         } else {
             this.recordButton.disabled = false;
-            this.statusLabel.textContent = 'Gotowy do nagrywania';
+            this.recordButton.classList.remove('disabled');
+            this.updateRecordingStatus('ready');
         }
     }
     
     setupEventListeners() {
-        this.recordButton.addEventListener('click', () => this.toggleRecording());
+        this.recordButton.addEventListener('click', () => {
+            // Wykonaj nagrywanie tylko gdy token jest dostępny
+            if (this.token) {
+                this.toggleRecording();
+            } else {
+                alert('Musisz najpierw połączyć się ze Spotify!');
+            }
+        });
     }
     
     toggleRecording() {
@@ -56,8 +71,13 @@ class RecorderApp {
             this.mediaRecorder = new MediaRecorder(stream);
             this.setupAudioAnalyser(stream);
             this.levelInterval = setInterval(() => this.updateAudioLevel(), 50);
-            this.mediaRecorder.ondataavailable = e => { if (e.data.size) this.audioChunks.push(e.data); };
-            this.mediaRecorder.start();
+            
+            // Ustawienie obsługi danych audio
+            this.mediaRecorder.ondataavailable = e => { 
+                if (e.data.size) this.audioChunks.push(e.data); 
+            };
+            
+            this.mediaRecorder.start(1000); // Zbieraj dane co sekundę
             this.recording = true;
             this.recordButton.textContent = 'ZATRZYMAJ';
             this.recordButton.classList.add('recording');
@@ -135,11 +155,21 @@ class RecorderApp {
     async sendAudioFile(blob, filename) {
         const url = 'https://n8nlink.bieda.it/webhook-test/c4fa58af-d8d4-4930-9003-4c10711064e2';
         try {
+            // Sprawdź czy mamy token przed wysyłką
+            if (!this.token) {
+                throw new Error('Brak tokenu autoryzacyjnego');
+            }
+            
             this.statusLabel.textContent = 'Wysyłanie pliku...';
             const formData = new FormData();
             formData.append('file', blob, filename);
             formData.append('token', this.token);
-            const resp = await fetch(url, { method: 'POST', body: formData });
+            
+            const resp = await fetch(url, { 
+                method: 'POST', 
+                body: formData 
+            });
+            
             if (!resp.ok) throw new Error(`${resp.status} - ${await resp.text()}`);
             this.updateRecordingStatus('success');
         } catch (err) {
