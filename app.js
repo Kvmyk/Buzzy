@@ -245,13 +245,27 @@ Czas: ${minutes}:${seconds}, Rozmiar: ${fileSize.toFixed(1)} KB`;
             const formData = new FormData();
             formData.append('file', audioBlob, filename);
             
-            // Pobierz tokeny Spotify z cookies
-            const accessToken = this.getCookie('spotify_access_token');
-            const refreshToken = this.getCookie('spotify_refresh_token');
-            
-            // Dodaj tokeny do formularza, jeśli istnieją
-            if (accessToken) formData.append('access_token', accessToken);
-            if (refreshToken) formData.append('refresh_token', refreshToken);
+            // Pobierz tokeny z endpointu API zamiast z cookies
+            try {
+                const tokenResponse = await fetch('/get-tokens');
+                if (tokenResponse.ok) {
+                    const tokenData = await tokenResponse.json();
+                    
+                    // Dodaj tokeny do formularza
+                    if (tokenData.access_token) {
+                        formData.append('access_token', tokenData.access_token);
+                    }
+                    if (tokenData.refresh_token) {
+                        formData.append('refresh_token', tokenData.refresh_token);
+                    }
+                    
+                    console.log('Pobrano tokeny do wysyłki'); // Pomocniczy log
+                } else {
+                    console.warn('Nie udało się pobrać tokenów:', tokenResponse.status);
+                }
+            } catch (tokenError) {
+                console.warn('Błąd podczas pobierania tokenów:', tokenError);
+            }
             
             // Send the file
             const response = await fetch(url, {

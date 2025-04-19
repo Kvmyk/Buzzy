@@ -177,6 +177,21 @@ app.get('/refresh_token', async (req, res) => {
   }
 });
 
+// Endpoint zwracający tokeny (tylko dla zalogowanych użytkowników)
+app.get('/get-tokens', (req, res) => {
+  const accessToken = req.cookies.spotify_access_token;
+  const refreshToken = req.cookies.spotify_refresh_token;
+  
+  if (!accessToken) {
+    return res.status(401).json({ error: 'Nie zalogowano' });
+  }
+  
+  res.json({
+    access_token: accessToken,
+    refresh_token: refreshToken
+  });
+});
+
 // Start serwera
 app.listen(PORT, IP_ADDRESS, () => {
   console.log(`Buzzy app listening on http://[${IP_ADDRESS}]:${PORT}`);
