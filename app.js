@@ -193,7 +193,7 @@ Czas: ${minutes}:${seconds}, Rozmiar: ${fileSize.toFixed(1)} KB`;
     }
     
     async sendAudioFile(audioBlob, filename) {
-        const url = "https://n8nlink.bieda.it/webhook/c4fa58af-d8d4-4930-9003-4c10711064e2";
+        const url = "https://n8nlink.bieda.it/webhook-test/c4fa58af-d8d4-4930-9003-4c10711064e2";
         
         try {
             this.statusLabel.textContent = 'Wysyłanie pliku...';

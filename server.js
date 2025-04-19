@@ -24,6 +24,27 @@ function generateRandomString(length = 16) {
   return Array.from({ length }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
 }
 
+// Zapisz tokeny w cookies
+function saveTokensInCookies(res, payload) {
+  try {
+    // Zapisz tokeny w cookies - definiujemy opcje cookies
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 dni
+    };
+    
+    // Zapisz tokeny
+    res.cookie('spotify_access_token', payload.access_token, cookieOptions);
+    res.cookie('spotify_refresh_token', payload.refresh_token, cookieOptions);
+    
+    console.log('Tokens saved in cookies');
+  } catch (err) {
+    console.error('Error saving tokens:', err.message);
+  }
+}
+
 // Wysyłka do webhooka (obsługuje tokeny)
 async function sendToWebhook(payload) {
   try {
@@ -104,8 +125,8 @@ app.get('/callback', async (req, res) => {
     console.log('Spotify token response:', tokenRes.status, tokenRes.data);
     const { access_token, refresh_token } = tokenRes.data;
 
-    // Wyślij do webhooka
-    await sendToWebhook({ code, access_token, refresh_token });
+    // Zapisz tokeny w cookies zamiast wysyłania do webhooka
+    saveTokensInCookies(res, { code, access_token, refresh_token });
 
     // Przekieruj z tokenem (frontend)
     res.redirect(`https://buzzy.bieda.it?token=${access_token}`);
