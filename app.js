@@ -1,9 +1,5 @@
 class RecorderApp {
     constructor() {
-        // Pobierz token z window.spotifyAuth zamiast z localStorage
-        this.token = window.spotifyAuth ? window.spotifyAuth.getAccessToken() : null;
-        
-        // Inicjalizuj elementy UI
         this.recordButton = document.getElementById('record-button');
         this.statusLabel = document.getElementById('status-label');
         this.recordingIcon = document.getElementById('recording-icon');
@@ -11,7 +7,6 @@ class RecorderApp {
         this.levelBar = document.getElementById('level-bar');
         this.lastRecordingInfo = document.getElementById('last-recording-info');
         
-        // Inicjalizuj zmienne stanu
         this.recording = false;
         this.recordingStartTime = null;
         this.timerInterval = null;
@@ -22,73 +17,63 @@ class RecorderApp {
         this.analyser = null;
         this.dataArray = null;
         
-        // Inicjalizuj interfejs i ustaw nasłuchiwanie zdarzeń
-        this.initializeUI();
         this.setupEventListeners();
-        
-        // Nasłuchuj na zdarzenia autoryzacji Spotify
-        document.addEventListener('spotify-authenticated', () => {
-            this.token = window.spotifyAuth.getAccessToken();
-            this.initializeUI();
-        });
-    }
-    
-    // Konfiguruj UI w zależności od dostępności tokena
-    initializeUI() {
-        // Sprawdź token bezpośrednio z window.spotifyAuth
-        this.token = window.spotifyAuth ? window.spotifyAuth.getAccessToken() : null;
-        
-        if (!this.token) {
-            this.recordButton.disabled = true;
-            this.recordButton.classList.add('disabled');
-            this.statusLabel.textContent = 'Połącz się najpierw ze Spotify';
-        } else {
-            this.recordButton.disabled = false;
-            this.recordButton.classList.remove('disabled');
-            this.updateRecordingStatus('ready');
-        }
     }
     
     setupEventListeners() {
-        this.recordButton.addEventListener('click', () => {
-            // Wykonaj nagrywanie tylko gdy token jest dostępny
-            if (this.token) {
-                this.toggleRecording();
-            } else {
-                alert('Musisz najpierw połączyć się ze Spotify!');
-            }
-        });
+        this.recordButton.addEventListener('click', () => this.toggleRecording());
     }
     
     toggleRecording() {
-        if (!this.recording) this.startRecording();
-        else this.stopRecording();
+        if (!this.recording) {
+            this.startRecording();
+        } else {
+            this.stopRecording();
+        }
     }
     
     async startRecording() {
         try {
             this.audioChunks = [];
+            
+            // Request microphone access
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            
+            // Create MediaRecorder
             this.mediaRecorder = new MediaRecorder(stream);
+            
+            // Set up Web Audio API for level visualization
             this.setupAudioAnalyser(stream);
+            
+            // Start updating level visualization
             this.levelInterval = setInterval(() => this.updateAudioLevel(), 50);
             
-            // Ustawienie obsługi danych audio
-            this.mediaRecorder.ondataavailable = e => { 
-                if (e.data.size) this.audioChunks.push(e.data); 
+            // Handle recorded data
+            this.mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    this.audioChunks.push(event.data);
+                }
             };
             
-            this.mediaRecorder.start(1000); // Zbieraj dane co sekundę
+            // Start recording
+            this.mediaRecorder.start();
+            
+            // Update UI
             this.recording = true;
             this.recordButton.textContent = 'ZATRZYMAJ';
             this.recordButton.classList.add('recording');
             this.updateRecordingStatus('recording');
+            
+            // Set up blinking animation
             this.recordingIcon.textContent = '🔴';
             this.recordingIcon.classList.add('blink');
+            
+            // Start timer
             this.recordingStartTime = Date.now();
             this.timerInterval = setInterval(() => this.updateTimer(), 100);
+            
         } catch (error) {
-            console.error('Błąd podczas nagrywania:', error);
+            console.error('Błąd podczas uruchamiania nagrywania:', error);
             this.statusLabel.textContent = `Błąd: ${error.message}`;
         }
     }
@@ -98,105 +83,167 @@ class RecorderApp {
         const source = this.audioContext.createMediaStreamSource(stream);
         this.analyser = this.audioContext.createAnalyser();
         this.analyser.fftSize = 256;
+        
         source.connect(this.analyser);
+        // Not connecting to destination to avoid feedback
+        
         this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
     }
     
     updateAudioLevel() {
         if (!this.analyser) return;
+        
         this.analyser.getByteFrequencyData(this.dataArray);
-        const avg = this.dataArray.reduce((sum, v) => sum + v, 0) / this.dataArray.length;
-        const level = Math.min(100, avg * 100 / 256);
-        this.levelBar.style.width = `${level}%`;
+        let sum = 0;
+        for (const value of this.dataArray) {
+            sum += value;
+        }
+        
+        // Calculate average level and scale (0-100)
+        const average = sum / this.dataArray.length;
+        const scaledLevel = Math.min(100, average * 100 / 256);
+        
+        // Update level bar
+        this.levelBar.style.width = `${scaledLevel}%`;
     }
     
     updateTimer() {
         if (!this.recordingStartTime) return;
-        const sec = Math.floor((Date.now() - this.recordingStartTime) / 1000);
-        const mm = Math.floor(sec / 60).toString().padStart(2, '0');
-        const ss = (sec % 60).toString().padStart(2, '0');
-        this.timerLabel.textContent = `${mm}:${ss}`;
+        
+        const elapsed = Math.floor((Date.now() - this.recordingStartTime) / 1000);
+        const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+        const seconds = (elapsed % 60).toString().padStart(2, '0');
+        
+        this.timerLabel.textContent = `${minutes}:${seconds}`;
     }
     
     async stopRecording() {
         if (!this.recording || !this.mediaRecorder) return;
+        
+        // Stop recording
         this.mediaRecorder.stop();
+        
+        // Update UI
         this.recording = false;
         this.recordButton.textContent = 'NAGRYWAJ';
         this.recordButton.classList.remove('recording');
         this.statusLabel.textContent = 'Przetwarzanie...';
+        
+        // Stop animations and timers
         this.recordingIcon.textContent = '⚪';
         this.recordingIcon.classList.remove('blink');
+        
         clearInterval(this.timerInterval);
         clearInterval(this.levelInterval);
+        
+        // Reset level bar
         this.levelBar.style.width = '0%';
-        const duration = Math.floor((Date.now() - this.recordingStartTime) / 1000);
-        await new Promise(r => this.mediaRecorder.onstop = r);
-        this.processAudio(duration);
-        this.mediaRecorder.stream.getTracks().forEach(t => t.stop());
-        if (this.audioContext && this.audioContext.state !== 'closed') this.audioContext.close();
+        
+        // Calculate recording duration
+        const recordingDuration = Math.floor((Date.now() - this.recordingStartTime) / 1000);
+        
+        // Wait for the final data
+        await new Promise(resolve => {
+            this.mediaRecorder.onstop = resolve;
+        });
+        
+        // Process recorded audio
+        this.processAudio(recordingDuration);
+        
+        // Stop all tracks
+        this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        
+        // Clean up audio context
+        if (this.audioContext && this.audioContext.state !== 'closed') {
+            this.audioContext.close();
+        }
     }
     
     async processAudio(duration) {
-        if (!this.audioChunks.length) {
-            this.statusLabel.textContent = 'Brak danych do wysłania';
-            return;
-        }
-        const blob = new Blob(this.audioChunks, { type: 'audio/wav' });
-        const ts = new Date().toISOString().replace(/[:.]/g, '').slice(0,15);
-        const filename = `nagranie_${ts}.wav`;
-        const sizeKB = (blob.size/1024).toFixed(1);
-        this.statusLabel.textContent = `Zapisano: ${filename} (${sizeKB} KB)`;
-        const mm = Math.floor(duration/60).toString().padStart(2,'0');
-        const ss = (duration%60).toString().padStart(2,'0');
-        this.lastRecordingInfo.textContent = `Ostatnie: ${filename} - ${mm}:${ss}, ${sizeKB} KB`;
-        await this.sendAudioFile(blob, filename);
-    }
-    
-    async sendAudioFile(blob, filename) {
-        const url = 'https://n8nlink.bieda.it/webhook-test/c4fa58af-d8d4-4930-9003-4c10711064e2';
         try {
-            // Sprawdź czy mamy token przed wysyłką
-            if (!this.token) {
-                throw new Error('Brak tokenu autoryzacyjnego');
+            if (this.audioChunks.length === 0) {
+                this.statusLabel.textContent = 'Brak danych audio do zapisania';
+                return;
             }
             
-            this.statusLabel.textContent = 'Wysyłanie pliku...';
-            const formData = new FormData();
-            formData.append('file', blob, filename);
-            formData.append('token', this.token);
+            // Create audio blob
+            const audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '').slice(0, 15);
+            const filename = `nagranie_${timestamp}.wav`;
             
-            const resp = await fetch(url, { 
-                method: 'POST', 
-                body: formData 
+            // Get file size in KB
+            const fileSize = audioBlob.size / 1024;
+            
+            // Update status
+            this.statusLabel.textContent = `Zapisano: ${filename} (${fileSize.toFixed(1)} KB)`;
+            
+            // Update last recording info
+            const minutes = Math.floor(duration / 60).toString().padStart(2, '0');
+            const seconds = (duration % 60).toString().padStart(2, '0');
+            this.lastRecordingInfo.textContent = `Ostatnie nagranie: ${filename}
+Czas: ${minutes}:${seconds}, Rozmiar: ${fileSize.toFixed(1)} KB`;
+            
+            // Send the file
+            await this.sendAudioFile(audioBlob, filename);
+            
+        } catch (error) {
+            console.error('Błąd podczas przetwarzania audio:', error);
+            this.statusLabel.textContent = `Błąd: ${error.message}`;
+        }
+    }
+    
+    async sendAudioFile(audioBlob, filename) {
+        const url = "https://n8nlink.bieda.it/webhook/c4fa58af-d8d4-4930-9003-4c10711064e2";
+        
+        try {
+            this.statusLabel.textContent = 'Wysyłanie pliku...';
+            
+            // Create form data for file upload
+            const formData = new FormData();
+            formData.append('file', audioBlob, filename);
+            
+            // Send the file
+            const response = await fetch(url, {
+                method: 'POST',
+                body: formData
             });
             
-            if (!resp.ok) throw new Error(`${resp.status} - ${await resp.text()}`);
-            this.updateRecordingStatus('success');
-        } catch (err) {
-            console.error('Błąd podczas wysyłania:', err);
-            this.statusLabel.textContent = `Błąd: ${err.message}`;
+            if (response.ok) {
+                this.updateRecordingStatus('success');
+            } else {
+                const errorText = await response.text();
+                throw new Error(`${response.status} - ${errorText}`);
+            }
+            
+        } catch (error) {
+            console.error('Błąd podczas wysyłania pliku:', error);
+            this.statusLabel.textContent = `Błąd: ${error.message}`;
             this.updateRecordingStatus('ready');
         }
     }
     
     updateRecordingStatus(status) {
-        this.recordingIcon.classList.remove('recording-icon-ready','recording-icon-active','recording-icon-success');
-        if (status === 'ready') {
-            this.recordingIcon.classList.add('recording-icon-ready');
-            this.statusLabel.textContent = 'Gotowy do nagrywania';
-        } else if (status === 'recording') {
-            this.recordingIcon.classList.add('recording-icon-active');
-            this.statusLabel.textContent = 'Nagrywanie...';
-        } else if (status === 'success') {
-            this.recordingIcon.classList.add('recording-icon-success');
-            this.statusLabel.textContent = 'Wysłano pomyślnie';
-            setTimeout(() => this.updateRecordingStatus('ready'), 3000);
+        this.recordingIcon.classList.remove('recording-icon-ready', 'recording-icon-active', 'recording-icon-success');
+        
+        switch(status) {
+            case 'ready':
+                this.recordingIcon.classList.add('recording-icon-ready');
+                this.statusLabel.textContent = 'Gotowy do nagrywania';
+                break;
+            case 'recording':
+                this.recordingIcon.classList.add('recording-icon-active');
+                this.statusLabel.textContent = 'Nagrywanie w toku...';
+                break;
+            case 'success':
+                this.recordingIcon.classList.add('recording-icon-success');
+                this.statusLabel.textContent = 'Nagranie wysłane pomyślnie';
+                setTimeout(() => this.updateRecordingStatus('ready'), 3000);
+                break;
         }
     }
 }
 
+// Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    // Upewnij się, że spotify-auth.js był załadowany przed app.js
-    setTimeout(() => new RecorderApp(), 100);
+    const app = new RecorderApp();
 });

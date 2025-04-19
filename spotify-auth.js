@@ -5,7 +5,7 @@ class SpotifyAuth {
     this.accessToken = null;
     this.expiresAt = null;
     
-    // Sprawdź czy mamy token zapisany w localStorage (sprawdź oba klucze dla zgodności)
+    // Sprawdź czy mamy token zapisany w localStorage
     this.loadTokenFromStorage();
     
     // Sprawdź czy właśnie wracamy z procesu autoryzacji
@@ -13,27 +13,12 @@ class SpotifyAuth {
   }
   
   loadTokenFromStorage() {
-    // Próbuje odczytać token z obu możliwych kluczy
-    let tokenData = localStorage.getItem('spotify_auth_data');
-    const legacyToken = localStorage.getItem('spotify_token');
-    
-    // Jeśli mamy stary format tokenu, konwertuj go
-    if (!tokenData && legacyToken) {
-      tokenData = JSON.stringify({
-        access_token: legacyToken,
-        expires_at: new Date().getTime() + (3600 * 1000) // Zakładamy 1 godzinę
-      });
-      localStorage.setItem('spotify_auth_data', tokenData);
-    }
-    
+    const tokenData = localStorage.getItem('spotify_auth_data');
     if (tokenData) {
       try {
         const parsed = JSON.parse(tokenData);
         this.accessToken = parsed.access_token;
         this.expiresAt = parsed.expires_at;
-        
-        // Dla zgodności z app.js, zapisz token również pod starym kluczem
-        localStorage.setItem('spotify_token', this.accessToken);
         
         // Sprawdź czy token jest wciąż ważny
         if (this.expiresAt && new Date().getTime() > this.expiresAt) {
@@ -81,7 +66,6 @@ class SpotifyAuth {
     this.accessToken = null;
     this.expiresAt = null;
     localStorage.removeItem('spotify_auth_data');
-    localStorage.removeItem('spotify_token'); // Usuń również stary klucz
   }
   
   login() {
