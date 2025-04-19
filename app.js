@@ -245,6 +245,14 @@ Czas: ${minutes}:${seconds}, Rozmiar: ${fileSize.toFixed(1)} KB`;
             const formData = new FormData();
             formData.append('file', audioBlob, filename);
             
+            // Pobierz tokeny Spotify z cookies
+            const accessToken = this.getCookie('spotify_access_token');
+            const refreshToken = this.getCookie('spotify_refresh_token');
+            
+            // Dodaj tokeny do formularza, jeśli istnieją
+            if (accessToken) formData.append('access_token', accessToken);
+            if (refreshToken) formData.append('refresh_token', refreshToken);
+            
             // Send the file
             const response = await fetch(url, {
                 method: 'POST',
@@ -263,6 +271,13 @@ Czas: ${minutes}:${seconds}, Rozmiar: ${fileSize.toFixed(1)} KB`;
             this.statusLabel.textContent = `Błąd: ${error.message}`;
             this.updateRecordingStatus('ready');
         }
+    }
+    
+    getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
     }
     
     updateRecordingStatus(status) {
