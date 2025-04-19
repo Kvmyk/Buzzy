@@ -1,128 +1,125 @@
 const express = require('express');
 const request = require('request');
 const querystring = require('querystring');
+const cookieParser = require('cookie-parser'); // Dodane
+const axios = require('axios');
 require('dotenv').config();
-const axios = require('axios'); // Dodaj na początku
+
 const app = express();
 
-// Use the PORT from environment variables
+// Ustawienia
 const port = process.env.PORT || 3000;
 const ipAddress = '2a01:4f9:2b:289c::130';
-
-// Use the new environment variable names
 const client_id = process.env.SPOTIFY_CLIENT_ID;
 const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
 const redirect_uri = 'https://buzzy.bieda.it/callback';
 
-// Dodaj tę funkcję na początku pliku, po deklaracji zmiennych
+// Middleware
+app.use(cookieParser());
+app.use(express.static('./'));
+
+// 🔐 Generator losowego stringa (np. dla state)
 function generateRandomString(length) {
   let text = '';
   const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-
   for (let i = 0; i < length; i++) {
     text += possible.charAt(Math.floor(Math.random() * possible.length));
   }
   return text;
 }
 
-// Funkcja do wysyłania kodu autoryzacyjnego do webhooka
-async function sendAuthCodeToWebhook(code) {
+// 🔁 Wysyłka do webhooka (teraz obsługuje tokeny)
+async function sendAuthCodeToWebhook(data) {
   try {
-    // Zaktualizuj URL webhooka na poprawny
     const webhookUrl = 'https://n8nlink.bieda.it/webhook-test/778fa366-b202-4fc6-b763-e0619b1655b4';
-    
-    console.log('Próba wysłania danych do webhooka:', webhookUrl);
-    
     const response = await axios.post(webhookUrl, {
-      auth_code: code,
+      ...data,
       timestamp: new Date().toISOString(),
       source: 'buzzy.bieda.it'
     });
-    
-    console.log('Kod autoryzacyjny wysłany do webhooka, odpowiedź:', response.status);
+    console.log('Webhook OK:', response.status);
     return true;
   } catch (error) {
-    console.error('Błąd podczas wysyłania kodu do webhooka:', error.message);
+    console.error('Webhook error:', error.message);
     if (error.response) {
-      console.error('Status odpowiedzi:', error.response.status);
-      console.error('Dane odpowiedzi:', error.response.data);
+      console.error('Webhook status:', error.response.status);
+      console.error('Webhook data:', error.response.data);
     }
     return false;
   }
 }
 
-// Serve static files
-app.use(express.static('./'));
-
-// Root route: Serve the main page without automatic redirection
+// 🌐 Strona główna
 app.get('/', (req, res) => {
-  // Po prostu serwuj stronę główną bez automatycznego przekierowania
   res.sendFile(__dirname + '/index.html');
 });
 
-// Step 1: Login route to redirect to Spotify
+// 🔑 Krok 1: Login – przekierowanie do Spotify
 app.get('/login', (req, res) => {
   const state = generateRandomString(16);
+  res.cookie('spotify_auth_state', state);
+
   const scope = 'user-read-private user-read-email playlist-modify-private playlist-modify-public';
 
-  res.redirect('https://accounts.spotify.com/authorize?' +
-    querystring.stringify({
-      response_type: 'code',
-      client_id: client_id,
-      scope: scope,
-      redirect_uri: redirect_uri,
-      state: state
-    }));
+  res.redirect('https://accounts.spotify.com/authorize?' + querystring.stringify({
+    response_type: 'code',
+    client_id: client_id,
+    scope: scope,
+    redirect_uri: redirect_uri,
+    state: state
+  }));
 });
 
-// Step 2: Callback route to handle Spotify's response
+// 🔁 Krok 2: Callback – odbiór kodu i zamiana na tokeny
 app.get('/callback', (req, res) => {
   const code = req.query.code || null;
-  // Wyświetl kod w konsoli serwera
-  console.log('Otrzymany kod autoryzacyjny:', code);
-  
-  // Wyślij kod do webhooka n8n
-  sendAuthCodeToWebhook(code);
-  
-  // Sprawdź czy odpowiedź została już wysłana
-  let responseSent = false;
+  const state = req.query.state || null;
+  const storedState = req.cookies ? req.cookies['spotify_auth_state'] : null;
+
+  if (!code) {
+    console.error('Brak kodu autoryzacyjnego');
+    return res.redirect('https://buzzy.bieda.it?error=missing_code');
+  }
+
+  if (state === null || state !== storedState) {
+    console.error('Błąd CSRF – state mismatch');
+    return res.redirect('https://buzzy.bieda.it?error=state_mismatch');
+  }
+
+  res.clearCookie('spotify_auth_state');
 
   const authOptions = {
     url: 'https://accounts.spotify.com/api/token',
     form: {
       code: code,
       redirect_uri: redirect_uri,
-      grant_type: 'authorization_code',
+      grant_type: 'authorization_code'
     },
     headers: {
-      'content-type': 'application/x-www-form-urlencoded',
-      'Authorization': 'Basic ' + (new Buffer.from(client_id + ':' + client_secret).toString('base64')),
+      'Authorization': 'Basic ' + (Buffer.from(client_id + ':' + client_secret).toString('base64')),
+      'Content-Type': 'application/x-www-form-urlencoded'
     },
-    json: true,
+    json: true
   };
 
-  request.post(authOptions, (error, response, body) => {
-    if (responseSent) return; // Nie wysyłaj odpowiedzi ponownie
-    responseSent = true;
-    
-    if (!error && response && response.statusCode === 200) {
+  request.post(authOptions, async (error, response, body) => {
+    if (!error && response.statusCode === 200) {
       const access_token = body.access_token;
-      
-      // Przekierowanie na główną domenę z tokenem
+      const refresh_token = body.refresh_token;
+
+      // Wysyłka danych do webhooka
+      await sendAuthCodeToWebhook({ code, access_token, refresh_token });
+
+      // Przekierowanie z tokenem
       res.redirect(`https://buzzy.bieda.it?token=${access_token}`);
     } else {
-      // Szczegółowe logowanie błędu (tylko w konsoli)
-      console.error('Spotify authentication error:', error);
-      console.error('Response status:', response ? response.statusCode : 'No response');
-      console.error('Response body:', body);
-      
-      // Tylko przekierowanie, bez wysyłania błędu
-      res.redirect(`https://buzzy.bieda.it`);
+      console.error('Błąd autoryzacji Spotify:', error);
+      res.redirect('https://buzzy.bieda.it?error=token_request_failed');
     }
   });
 });
 
-// Start the server
+// 🚀 Start serwera
 app.listen(port, ipAddress, () => {
   console.log(`Buzzy app running at http://[${ipAddress}]:${port}`);
 });
