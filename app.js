@@ -1,15 +1,7 @@
 class RecorderApp {
     constructor() {
-        // Pobierz token z URL lub localStorage
-        const urlParams = new URLSearchParams(window.location.search);
-        
-        // Odczytaj token i zapisz, jeśli jest w URL
-        this.token = urlParams.get('token') || localStorage.getItem('spotify_token');
-        if (urlParams.get('token')) {
-            localStorage.setItem('spotify_token', this.token);
-            // Usuń token z URL dla bezpieczeństwa
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
+        // Pobierz token z window.spotifyAuth zamiast z localStorage
+        this.token = window.spotifyAuth ? window.spotifyAuth.getAccessToken() : null;
         
         // Inicjalizuj elementy UI
         this.recordButton = document.getElementById('record-button');
@@ -33,10 +25,19 @@ class RecorderApp {
         // Inicjalizuj interfejs i ustaw nasłuchiwanie zdarzeń
         this.initializeUI();
         this.setupEventListeners();
+        
+        // Nasłuchuj na zdarzenia autoryzacji Spotify
+        document.addEventListener('spotify-authenticated', () => {
+            this.token = window.spotifyAuth.getAccessToken();
+            this.initializeUI();
+        });
     }
     
     // Konfiguruj UI w zależności od dostępności tokena
     initializeUI() {
+        // Sprawdź token bezpośrednio z window.spotifyAuth
+        this.token = window.spotifyAuth ? window.spotifyAuth.getAccessToken() : null;
+        
         if (!this.token) {
             this.recordButton.disabled = true;
             this.recordButton.classList.add('disabled');
@@ -195,4 +196,7 @@ class RecorderApp {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => new RecorderApp());
+document.addEventListener('DOMContentLoaded', () => {
+    // Upewnij się, że spotify-auth.js był załadowany przed app.js
+    setTimeout(() => new RecorderApp(), 100);
+});
