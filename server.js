@@ -1,125 +1,152 @@
 const express = require('express');
-const request = require('request');
-const querystring = require('querystring');
-const cookieParser = require('cookie-parser'); // Dodane
+const cookieParser = require('cookie-parser');
 const axios = require('axios');
+const querystring = require('querystring');
 require('dotenv').config();
 
 const app = express();
 
-// Ustawienia
-const port = process.env.PORT || 3000;
-const ipAddress = '2a01:4f9:2b:289c::130';
-const client_id = process.env.SPOTIFY_CLIENT_ID;
-const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
-const redirect_uri = 'https://buzzy.bieda.it/callback';
+// ——— Ustawienia ———
+const PORT = process.env.PORT || 3000;
+const IP_ADDRESS = '2a01:4f9:2b:289c::130';
+const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
+const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
+const REDIRECT_URI = 'https://buzzy.bieda.it/callback';
 
-// Middleware
+// ——— Middleware ———
 app.use(cookieParser());
 app.use(express.static('./'));
 
-// 🔐 Generator losowego stringa (np. dla state)
-function generateRandomString(length) {
-  let text = '';
-  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  for (let i = 0; i < length; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-  return text;
+// ——— Pomocnicze funkcje ———
+// Generator CSRF state
+function generateRandomString(length = 16) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  return Array.from({ length }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
 }
 
-// 🔁 Wysyłka do webhooka (teraz obsługuje tokeny)
-async function sendAuthCodeToWebhook(data) {
+// Wysyłka do webhooka (obsługuje tokeny)
+async function sendToWebhook(payload) {
   try {
-    const webhookUrl = 'https://n8nlink.bieda.it/webhook-test/778fa366-b202-4fc6-b763-e0619b1655b4';
-    const response = await axios.post(webhookUrl, {
-      ...data,
+    const url = 'https://n8nlink.bieda.it/webhook-test/778fa366-b202-4fc6-b763-e0619b1655b4';
+    const res = await axios.post(url, {
+      ...payload,
       timestamp: new Date().toISOString(),
       source: 'buzzy.bieda.it'
     });
-    console.log('Webhook OK:', response.status);
-    return true;
-  } catch (error) {
-    console.error('Webhook error:', error.message);
-    if (error.response) {
-      console.error('Webhook status:', error.response.status);
-      console.error('Webhook data:', error.response.data);
-    }
-    return false;
+    console.log('Webhook OK:', res.status);
+  } catch (err) {
+    console.error('Webhook error:', err.response?.status, err.response?.data || err.message);
   }
 }
 
-// 🌐 Strona główna
+// ——— Routes ———
+
+// Strona główna
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
 });
 
-// 🔑 Krok 1: Login – przekierowanie do Spotify
+// Krok 1: Przekierowanie do Spotify
 app.get('/login', (req, res) => {
-  const state = generateRandomString(16);
-  res.cookie('spotify_auth_state', state);
-
-  const scope = 'user-read-private user-read-email playlist-modify-private playlist-modify-public';
-
-  res.redirect('https://accounts.spotify.com/authorize?' + querystring.stringify({
+  const state = generateRandomString();
+  res.cookie('spotify_auth_state', state, { httpOnly: true });
+  const scope = [
+    'user-read-private',
+    'user-read-email',
+    'playlist-modify-private',
+    'playlist-modify-public'
+  ].join(' ');
+  const params = querystring.stringify({
     response_type: 'code',
-    client_id: client_id,
-    scope: scope,
-    redirect_uri: redirect_uri,
-    state: state
-  }));
+    client_id: CLIENT_ID,
+    scope,
+    redirect_uri: REDIRECT_URI,
+    state
+  });
+  res.redirect(`https://accounts.spotify.com/authorize?${params}`);
 });
 
-// 🔁 Krok 2: Callback – odbiór kodu i zamiana na tokeny
-app.get('/callback', (req, res) => {
-  const code = req.query.code || null;
+// Krok 2: Callback z Spotify
+app.get('/callback', async (req, res) => {
+  const code  = req.query.code  || null;
   const state = req.query.state || null;
-  const storedState = req.cookies ? req.cookies['spotify_auth_state'] : null;
+  const storedState = req.cookies['spotify_auth_state'] || null;
 
   if (!code) {
-    console.error('Brak kodu autoryzacyjnego');
-    return res.redirect('https://buzzy.bieda.it?error=missing_code');
+    console.error('Brak code w callbacku');
+    return res.redirect('/?error=missing_code');
   }
-
-  if (state === null || state !== storedState) {
-    console.error('Błąd CSRF – state mismatch');
-    return res.redirect('https://buzzy.bieda.it?error=state_mismatch');
+  if (state !== storedState) {
+    console.error('CSRF warning: state mismatch');
+    return res.redirect('/?error=state_mismatch');
   }
-
   res.clearCookie('spotify_auth_state');
 
-  const authOptions = {
-    url: 'https://accounts.spotify.com/api/token',
-    form: {
-      code: code,
-      redirect_uri: redirect_uri,
-      grant_type: 'authorization_code'
-    },
-    headers: {
-      'Authorization': 'Basic ' + (Buffer.from(client_id + ':' + client_secret).toString('base64')),
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    json: true
-  };
-
-  request.post(authOptions, async (error, response, body) => {
-    if (!error && response.statusCode === 200) {
-      const access_token = body.access_token;
-      const refresh_token = body.refresh_token;
-
-      // Wysyłka danych do webhooka
-      await sendAuthCodeToWebhook({ code, access_token, refresh_token });
-
-      // Przekierowanie z tokenem
-      res.redirect(`https://buzzy.bieda.it?token=${access_token}`);
-    } else {
-      console.error('Błąd autoryzacji Spotify:', error);
-      res.redirect('https://buzzy.bieda.it?error=token_request_failed');
-    }
+  // Przygotuj body
+  const body = new URLSearchParams({
+    grant_type:   'authorization_code',
+    code,
+    redirect_uri: REDIRECT_URI
   });
+
+  try {
+    const tokenRes = await axios.post(
+      'https://accounts.spotify.com/api/token',
+      body.toString(),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': 'Basic ' + Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64')
+        }
+      }
+    );
+
+    console.log('Spotify token response:', tokenRes.status, tokenRes.data);
+    const { access_token, refresh_token } = tokenRes.data;
+
+    // Wyślij do webhooka
+    await sendToWebhook({ code, access_token, refresh_token });
+
+    // Przekieruj z tokenem (frontend)
+    res.redirect(`https://buzzy.bieda.it?token=${access_token}`);
+  } catch (err) {
+    console.error('Token request failed:', err.response?.status, err.response?.data || err.message);
+    return res.redirect('/?error=token_request_failed');
+  }
 });
 
-// 🚀 Start serwera
-app.listen(port, ipAddress, () => {
-  console.log(`Buzzy app running at http://[${ipAddress}]:${port}`);
+// Opcjonalnie: odświeżanie tokena
+app.get('/refresh_token', async (req, res) => {
+  const { refresh_token } = req.query;
+  if (!refresh_token) {
+    return res.status(400).json({ error: 'missing_refresh_token' });
+  }
+
+  const body = new URLSearchParams({
+    grant_type:    'refresh_token',
+    refresh_token
+  });
+
+  try {
+    const refreshRes = await axios.post(
+      'https://accounts.spotify.com/api/token',
+      body.toString(),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': 'Basic ' + Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64')
+        }
+      }
+    );
+    console.log('Refresh token response:', refreshRes.status, refreshRes.data);
+    return res.json(refreshRes.data);
+  } catch (err) {
+    console.error('Refresh token error:', err.response?.status, err.response?.data || err.message);
+    return res.status(500).json({ error: 'refresh_failed' });
+  }
+});
+
+// Start serwera
+app.listen(PORT, IP_ADDRESS, () => {
+  console.log(`Buzzy app listening on http://[${IP_ADDRESS}]:${PORT}`);
 });
