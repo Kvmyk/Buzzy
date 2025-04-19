@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const axios = require('axios');
@@ -19,24 +20,10 @@ app.use(express.static('./'));
 
 // ——— Pomocnicze funkcje ———
 // Generator CSRF state
+documentation: - funkcja generująca losowy string 
 function generateRandomString(length = 16) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   return Array.from({ length }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
-}
-
-// Wysyłka do webhooka (obsługuje tokeny)
-async function sendToWebhook(payload) {
-  try {
-    const url = 'https://n8nlink.bieda.it/webhook-test/778fa366-b202-4fc6-b763-e0619b1655b4';
-    const res = await axios.post(url, {
-      ...payload,
-      timestamp: new Date().toISOString(),
-      source: 'buzzy.bieda.it'
-    });
-    console.log('Webhook OK:', res.status);
-  } catch (err) {
-    console.error('Webhook error:', err.response?.status, err.response?.data || err.message);
-  }
 }
 
 // ——— Routes ———
@@ -56,6 +43,7 @@ app.get('/login', (req, res) => {
     'playlist-modify-private',
     'playlist-modify-public'
   ].join(' ');
+
   const params = querystring.stringify({
     response_type: 'code',
     client_id: CLIENT_ID,
@@ -63,6 +51,7 @@ app.get('/login', (req, res) => {
     redirect_uri: REDIRECT_URI,
     state
   });
+
   res.redirect(`https://accounts.spotify.com/authorize?${params}`);
 });
 
@@ -82,7 +71,6 @@ app.get('/callback', async (req, res) => {
   }
   res.clearCookie('spotify_auth_state');
 
-  // Przygotuj body
   const body = new URLSearchParams({
     grant_type:   'authorization_code',
     code,
@@ -101,13 +89,13 @@ app.get('/callback', async (req, res) => {
       }
     );
 
-    console.log('Spotify token response:', tokenRes.status, tokenRes.data);
-    const { access_token, refresh_token } = tokenRes.data;
+    const { access_token, refresh_token, expires_in } = tokenRes.data;
 
-    // Wyślij do webhooka
-    await sendToWebhook({ code, access_token, refresh_token });
+    // Zapisz tokeny w ciasteczkach
+    res.cookie('access_token', access_token, { httpOnly: true, maxAge: expires_in * 1000 });
+    res.cookie('refresh_token', refresh_token, { httpOnly: true });
 
-    // Przekieruj z tokenem (frontend)
+    // Przekieruj do aplikacji frontendowej
     res.redirect(`https://buzzy.bieda.it?token=${access_token}`);
   } catch (err) {
     console.error('Token request failed:', err.response?.status, err.response?.data || err.message);
@@ -117,7 +105,7 @@ app.get('/callback', async (req, res) => {
 
 // Opcjonalnie: odświeżanie tokena
 app.get('/refresh_token', async (req, res) => {
-  const { refresh_token } = req.query;
+  const { refresh_token } = req.cookies;
   if (!refresh_token) {
     return res.status(400).json({ error: 'missing_refresh_token' });
   }
@@ -138,8 +126,13 @@ app.get('/refresh_token', async (req, res) => {
         }
       }
     );
-    console.log('Refresh token response:', refreshRes.status, refreshRes.data);
-    return res.json(refreshRes.data);
+
+    const { access_token, expires_in } = refreshRes.data;
+
+    // Zaktualizuj cookie z access token
+    res.cookie('access_token', access_token, { httpOnly: true, maxAge: expires_in * 1000 });
+    console.log('Refresh token OK');
+    return res.json({ access_token, expires_in });
   } catch (err) {
     console.error('Refresh token error:', err.response?.status, err.response?.data || err.message);
     return res.status(500).json({ error: 'refresh_failed' });
