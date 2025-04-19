@@ -58,17 +58,6 @@ class RecorderApp {
         this.recordButton.disabled = true;
         this.statusLabel.textContent = 'Wymagane logowanie Spotify';
         
-        // Create login button
-        const loginButton = document.createElement('button');
-        loginButton.textContent = 'Zaloguj przez Spotify';
-        loginButton.classList.add('login-button');
-        loginButton.addEventListener('click', () => {
-            window.location.href = '/login';
-        });
-        
-        // Insert login button after status label
-        this.statusLabel.parentNode.insertBefore(loginButton, this.statusLabel.nextSibling);
-        
         // Update recording icon
         this.recordingIcon.textContent = '🔒';
         this.recordingIcon.classList.add('locked');
