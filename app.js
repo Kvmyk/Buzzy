@@ -18,6 +18,60 @@ class RecorderApp {
         this.dataArray = null;
         
         this.setupEventListeners();
+        this.checkAuthentication();
+    }
+    
+    checkAuthentication() {
+        // Check if we have a token in URL params (from redirect)
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        
+        if (token) {
+            // We have a token in URL, which means the server has set cookies
+            // Clean up the URL without reloading the page
+            window.history.replaceState({}, document.title, window.location.pathname);
+            this.enableRecording();
+        } else {
+            // Check if we can access the cookies via endpoint
+            fetch('/check-auth')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.authenticated) {
+                        this.enableRecording();
+                    } else {
+                        this.showLoginRequired();
+                    }
+                })
+                .catch(error => {
+                    console.error('Auth check failed:', error);
+                    this.showLoginRequired();
+                });
+        }
+    }
+    
+    enableRecording() {
+        this.recordButton.disabled = false;
+        this.updateRecordingStatus('ready');
+    }
+    
+    showLoginRequired() {
+        this.recordButton.disabled = true;
+        this.statusLabel.textContent = 'Wymagane logowanie Spotify';
+        
+        // Create login button
+        const loginButton = document.createElement('button');
+        loginButton.textContent = 'Zaloguj przez Spotify';
+        loginButton.classList.add('login-button');
+        loginButton.addEventListener('click', () => {
+            window.location.href = '/login';
+        });
+        
+        // Insert login button after status label
+        this.statusLabel.parentNode.insertBefore(loginButton, this.statusLabel.nextSibling);
+        
+        // Update recording icon
+        this.recordingIcon.textContent = '🔒';
+        this.recordingIcon.classList.add('locked');
     }
     
     setupEventListeners() {
