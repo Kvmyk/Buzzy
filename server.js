@@ -136,6 +136,16 @@ app.get('/callback', async (req, res) => {
   }
 });
 
+// Sprawdź stan autentykacji
+app.get('/check-auth', (req, res) => {
+  // Sprawdź czy mamy token w cookies
+  const accessToken = req.cookies.spotify_access_token;
+  
+  res.json({
+    authenticated: !!accessToken
+  });
+});
+
 // Opcjonalnie: odświeżanie tokena
 app.get('/refresh_token', async (req, res) => {
   const { refresh_token } = req.query;
