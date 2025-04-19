@@ -255,9 +255,6 @@ Czas: ${minutes}:${seconds}, Rozmiar: ${fileSize.toFixed(1)} KB`;
                     if (tokenData.access_token) {
                         formData.append('access_token', tokenData.access_token);
                     }
-                    if (tokenData.refresh_token) {
-                        formData.append('refresh_token', tokenData.refresh_token);
-                    }
                     
                     console.log('Pobrano tokeny do wysyłki'); // Pomocniczy log
                 } else {
