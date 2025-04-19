@@ -16,37 +16,32 @@ const REDIRECT_URI = 'https://buzzy.bieda.it/callback';
 // ——— Middleware ———
 app.use(cookieParser());
 app.use(express.static('./'));
+app.use(express.json()); // parsowanie JSON dla przychodzących POST
 
 // ——— Pomocnicze funkcje ———
-// Generator CSRF state
 function generateRandomString(length = 16) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   return Array.from({ length }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
 }
 
-// Wysyłka do webhooka (obsługuje tokeny)
-async function sendToWebhook(payload) {
+async function sendToWebhook(url, payload) {
   try {
-    const url = 'https://n8nlink.bieda.it/webhook-test/778fa366-b202-4fc6-b763-e0619b1655b4';
-    const res = await axios.post(url, {
-      ...payload,
-      timestamp: new Date().toISOString(),
-      source: 'buzzy.bieda.it'
-    });
-    console.log('Webhook OK:', res.status);
+    const res = await axios.post(url, payload);
+    console.log(`Webhook POST ${url} OK:`, res.status);
+    return res.data;
   } catch (err) {
-    console.error('Webhook error:', err.response?.status, err.response?.data || err.message);
+    console.error(`Webhook POST ${url} error:`, err.response?.status, err.response?.data || err.message);
+    throw err;
   }
 }
 
 // ——— Routes ———
-
 // Strona główna
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
 });
 
-// Krok 1: Przekierowanie do Spotify
+// Krok 1: Przekierowanie do Spotify
 app.get('/login', (req, res) => {
   const state = generateRandomString();
   res.cookie('spotify_auth_state', state, { httpOnly: true });
@@ -56,6 +51,7 @@ app.get('/login', (req, res) => {
     'playlist-modify-private',
     'playlist-modify-public'
   ].join(' ');
+
   const params = querystring.stringify({
     response_type: 'code',
     client_id: CLIENT_ID,
@@ -63,26 +59,20 @@ app.get('/login', (req, res) => {
     redirect_uri: REDIRECT_URI,
     state
   });
+
   res.redirect(`https://accounts.spotify.com/authorize?${params}`);
 });
 
-// Krok 2: Callback z Spotify
+// Krok 2: Callback z Spotify
 app.get('/callback', async (req, res) => {
   const code  = req.query.code  || null;
   const state = req.query.state || null;
   const storedState = req.cookies['spotify_auth_state'] || null;
 
-  if (!code) {
-    console.error('Brak code w callbacku');
-    return res.redirect('/?error=missing_code');
-  }
-  if (state !== storedState) {
-    console.error('CSRF warning: state mismatch');
-    return res.redirect('/?error=state_mismatch');
-  }
+  if (!code) return res.redirect('/?error=missing_code');
+  if (state !== storedState) return res.redirect('/?error=state_mismatch');
   res.clearCookie('spotify_auth_state');
 
-  // Przygotuj body
   const body = new URLSearchParams({
     grant_type:   'authorization_code',
     code,
@@ -93,52 +83,67 @@ app.get('/callback', async (req, res) => {
     const tokenRes = await axios.post(
       'https://accounts.spotify.com/api/token',
       body.toString(),
-      {
-        headers: {
+      { headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'Authorization': 'Basic ' + Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64')
-        }
-      }
+        }}
     );
 
-    console.log('Spotify token response:', tokenRes.status, tokenRes.data);
     const { access_token, refresh_token } = tokenRes.data;
 
-    // Wyślij do webhooka
-    await sendToWebhook({ code, access_token, refresh_token });
+    // Wyślij tokeny do n8n (autoryzacja)
+    await sendToWebhook(
+      'https://n8nlink.bieda.it/webhook-test/778fa366-b202-4fc6-b763-e0619b1655b4',
+      { access_token, refresh_token }
+    );
 
-    // Przekieruj z tokenem (frontend)
+    // Przekieruj do frontendu z tokenem
     res.redirect(`https://buzzy.bieda.it?token=${access_token}`);
   } catch (err) {
     console.error('Token request failed:', err.response?.status, err.response?.data || err.message);
-    return res.redirect('/?error=token_request_failed');
+    res.redirect('/?error=token_request_failed');
   }
 });
 
-// Opcjonalnie: odświeżanie tokena
+// Nowa trasa: obsługa uruchomienia aplikacji
+app.post('/webhook/waitForActivation', async (req, res) => {
+  const { token } = req.body;
+  if (!token) return res.status(400).json({ error: 'missing_token' });
+
+  try {
+    // Walidacja tokena przez pobranie danych użytkownika
+    const meRes = await axios.get('https://api.spotify.com/v1/me', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    // Jeśli OK, forward do n8n Activation webhook
+    const activationData = await sendToWebhook(
+      'https://n8nlink.bieda.it/webhook-activation/your-activation-id',
+      { token, user: meRes.data }
+    );
+
+    return res.json({ status: 'activated', activationData });
+  } catch (err) {
+    console.error('Activation failed:', err.response?.status, err.response?.data || err.message);
+    return res.status(401).json({ error: 'invalid_token' });
+  }
+});
+
+// Opcjonalne: odświeżanie tokena
 app.get('/refresh_token', async (req, res) => {
   const { refresh_token } = req.query;
-  if (!refresh_token) {
-    return res.status(400).json({ error: 'missing_refresh_token' });
-  }
+  if (!refresh_token) return res.status(400).json({ error: 'missing_refresh_token' });
 
-  const body = new URLSearchParams({
-    grant_type:    'refresh_token',
-    refresh_token
-  });
-
+  const body = new URLSearchParams({ grant_type: 'refresh_token', refresh_token });
   try {
     const refreshRes = await axios.post(
       'https://accounts.spotify.com/api/token',
       body.toString(),
-      {
-        headers: {
+      { headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'Authorization': 'Basic ' + Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64')
-        }
-      }
+        }}
     );
-    console.log('Refresh token response:', refreshRes.status, refreshRes.data);
     return res.json(refreshRes.data);
   } catch (err) {
     console.error('Refresh token error:', err.response?.status, err.response?.data || err.message);
